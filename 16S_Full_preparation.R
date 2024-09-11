@@ -47,7 +47,6 @@ row.names(metadata16S_water) <- NULL
 metadata16S_water <- subset(metadata16S_water, select = -c(Flow,Temperature, TAD, ChlA, BA, Run)) %>% 
   column_to_rownames(var="NAME")
 metadata16S_water$Time <- sprintf("%02d", as.numeric(metadata16S_water$Time))
-#tree16Swater <- match.phylo.comm(tree16SFull, t(metadata16S_water))$phy
 
 #Parse taxonomy file
 taxonomy16SFull <- subset(ASV16SFull, select = c(OTUID,taxonomy)) %>%
