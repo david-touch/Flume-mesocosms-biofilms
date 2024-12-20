@@ -22,7 +22,6 @@ library(grid)
 library(picante)
 library(ranacapa)
 
-
 #Import files and format changes
 ASV16SFull = read.csv("16SFullMerged_table_tsv.csv",sep=",")
 ASV_16SFull <- subset(ASV16SFull, select = -c(taxonomy))
@@ -53,13 +52,7 @@ taxonomy16SFull <- subset(ASV16SFull, select = c(OTUID,taxonomy)) %>%
   separate(taxonomy, c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"), "; ") %>%
   column_to_rownames(var="OTUID")
 taxonomy16SFull <- as.matrix(taxonomy16SFull)
-taxonomy16SFull <- gsub("d__","",
-                        gsub("p__","",
-                             gsub("c__","",
-                                  gsub("o__","",
-                                       gsub("f__","",
-                                            gsub("g__","",
-                                                 gsub("s__","", taxonomy16SFull)))))))
+taxonomy16SFull <- gsub(".__","",taxonomy16SFull)
 
 ##16S Full Phyloseq (without water)
 #Forcing data frame
@@ -99,9 +92,9 @@ rarecurve_16S <- rarecurve16S +
   scale_y_continuous(breaks = c(0, 1000, 2000), limits = c(0, 2500))
 rarecurve_16S
 
-FigureS2 <- ggarrange(rarecurve_16S, rarecurve_18S, ncol = 1, nrow = 2, labels = c("A", "B"), font.label = list(size = 18), common.legend = TRUE, legend = "right")
-FigureS2
-ggsave("FigureS2.pdf", FigureS2, width = 30,
+FigureS3 <- ggarrange(rarecurve_16S, rarecurve_18S, ncol = 1, nrow = 2, labels = c("A", "B"), font.label = list(size = 18), common.legend = TRUE, legend = "right")
+FigureS3
+ggsave("FigureS3.pdf", FigureS3, width = 30,
        height = 35,
        units = "cm")
 
@@ -124,6 +117,13 @@ Sentinel16S.cma <- subset_taxa(Sentinel16S.cm, (Kingdom!="Archaea") | is.na(King
 Sentinel16S.cma 
 Sentinel16S_bacteria <- subset_taxa(Sentinel16S.cma, (Kingdom!="Eukaryota") | is.na(Kingdom))
 Sentinel16S_bacteria
+
+##Fixing taxonomy
+Sentinel16S_bacteria <- Sentinel16S_bacteria %>% tax_fix(
+  min_length = 4,
+  unknowns = c("Gammaproteobacteria_Incertae_Sedis", "Incertae_Sedis", "Synechococcales_Incertae_Sedis", "Cyanobacteriales_Incertae_Sedis", "Rhizobiales_Incertae_Sedis", "Incertae_Sedis Genus", "Oxyphotobacteria_Incertae_Sedis", "uncultured", "Unknown_Family"),
+  sep = " ", anon_unique = TRUE,
+  suffix_rank = "classified")
 
 #Create the "Drought" variable
 Sentinel16S_bacteria <- Sentinel16S_bacteria %>% 
@@ -169,7 +169,9 @@ Sentinel16S_2022_bacteria_filt_merged <- merge_samples(Sentinel16S_2022_bacteria
             Drought = str_replace(Drought, "1", "No"), Drought = str_replace(Drought, "2", "Yes")) %>% 
   ps_mutate(Primers = "16S")
 otu_table(Sentinel16S_2022_bacteria_filt_merged) <- t(otu_table(Sentinel16S_2022_bacteria_filt_merged))
-Sentinel16S_2022_bacteria_filt_merged
+
+saveRDS(Sentinel16S_2022_bacteria_filt_merged, file = "Sentinel16S_2022_bacteria_filt_merged.rds", ascii = FALSE, version = NULL,
+        compress = TRUE, refhook = NULL)
 
 saveRDS(Sentinel16S_2022_bacteria_filt_merged, file = "Sentinel16S_2022_bacteria_filt_merged.rds", ascii = FALSE, version = NULL,
         compress = TRUE, refhook = NULL)
@@ -206,7 +208,14 @@ Sentinel16S_water.cm
 Sentinel16S_water.cma <- subset_taxa(Sentinel16S_water.cm, (Kingdom!="Archaea") | is.na(Kingdom))
 Sentinel16S_water.cma 
 Sentinel16S_water_bacteria <- subset_taxa(Sentinel16S_water.cma, (Kingdom!="Eukaryota") | is.na(Kingdom))
+Sentinel16S_water_bacteria <- filter_taxa(Sentinel16S_water_bacteria, function(x) sum(x) > 1, TRUE)
 Sentinel16S_water_bacteria
+
+Sentinel16S_water_bacteria <- Sentinel16S_water_bacteria %>% tax_fix(
+  min_length = 4,
+  unknowns = c("Gammaproteobacteria_Incertae_Sedis", "Incertae_Sedis", "Synechococcales_Incertae_Sedis", "Cyanobacteriales_Incertae_Sedis", "Rhizobiales_Incertae_Sedis", "Incertae_Sedis Genus", "Oxyphotobacteria_Incertae_Sedis", "uncultured", "Unknown_Family"),
+  sep = " ", anon_unique = TRUE,
+  suffix_rank = "classified")
 
 saveRDS(Sentinel16S_water_bacteria, file = "Sentinel16S_water_bacteria.rds", ascii = FALSE, version = NULL,
         compress = TRUE, refhook = NULL)
@@ -243,8 +252,154 @@ MicEco_16S_abundance$children$canvas.grob$children$diagram.grob.1$children$tags$
 MicEco_16S_abundance$children$canvas.grob$children$diagram.grob.1$children$tags$children$tag.number.2$children$tag.quantity.2$label <- 10.50
 MicEco_16S_abundance$children$canvas.grob$children$diagram.grob.1$children$tags$children$tag.number.3$children$tag.quantity.3$label <- 79.45
 
-FigureS5 <- ggarrange(MicEco_16S, MicEco_16S_abundance, ncol = 1, nrow = 2, labels = c("A", "B"), font.label = list(size = 18))
-FigureS5
-ggsave("FigureS5.pdf", FigureS5, width = 20,
+FigureS6 <- ggarrange(MicEco_16S, MicEco_16S_abundance, ncol = 1, nrow = 2, labels = c("A", "B"), font.label = list(size = 18))
+FigureS6
+ggsave("FigureS6.pdf", FigureS6, width = 20,
        height = 20,
        units = "cm")
+
+##Count number of reads
+Sentinel16S_2022_bacteria_filt
+reads_16S <- sum(unlist(otu_table(Sentinel16S_2022_bacteria_filt)), na.rm = TRUE)
+Sentinel16S_2022_water_bacteria
+reads_16S_water <- sum(unlist(otu_table(Sentinel16S_2022_water_bacteria)), na.rm = TRUE)
+
+#Plot Graph-Bar for water samples
+Graphbar_16S_phylum_water <- Sentinel16S_2022_water_bacteria %>%
+  merge_samples(group = "Succession") %>% 
+  ps_arrange(Succession) %>%
+  comp_barplot(
+    tax_level = "Phylum", n_taxa = 14,
+    x = "Time",
+    bar_outline_colour = "grey5",
+    merge_other = FALSE,
+    sample_order = "default",
+    bar_width = 0.9) + 
+  labs(x = "Days of growth") +
+  xlim("5", "10", "14", "19", "24", "26","28", "33", "38", "40", "42", "47", "54", "61", "67", "75", "82", "87", "89", "91", "96", "103") +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(axis.text.y = element_text(size = 14),
+        axis.text.x = element_text(size = 14),
+        legend.position = "bottom",
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 16, face = "bold", angle = 90, hjust = 0.5, vjust = 0.5),
+        axis.title.y = element_text(size=16, face="bold"),
+        axis.title.x = element_text(size=16, face="bold"),
+        strip.text = element_text(size = 16), 
+        plot.margin = margin(1, 1, 1, 1, "cm")) +
+  guides(fill = guide_legend(ncol = 3))
+Graphbar_16S_phylum_water
+
+Graphbar_16S_family_water <- Sentinel16S_2022_water_bacteria %>%
+  merge_samples(group = "Succession") %>% 
+  ps_arrange(Succession) %>%
+  comp_barplot(
+    tax_level = "Family", n_taxa = 14,
+    x = "Time",
+    bar_outline_colour = "grey5",
+    merge_other = FALSE,
+    sample_order = "default",
+    bar_width = 0.9) + 
+  labs(x = "Days of growth") +
+  xlim("5", "10", "14", "19", "24", "26","28", "33", "38", "40", "42", "47", "54", "61", "67", "75", "82", "87", "89", "91", "96", "103") +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(axis.text.y = element_text(size = 14),
+        axis.text.x = element_text(size = 14),
+        legend.position = "bottom",
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 16, face = "bold", angle = 90, hjust = 0.5, vjust = 0.5),
+        axis.title.y = element_text(size=16, face="bold"),
+        axis.title.x = element_text(size=16, face="bold"),
+        strip.text = element_text(size = 16), 
+        plot.margin = margin(1, 1, 1, 1, "cm")) +
+  guides(fill = guide_legend(ncol = 3))
+Graphbar_16S_family_water
+
+#Figure S6
+left_titleBact <- text_grob("Bacteria", size = 18, rot = 90, hjust = 0.5, vjust = 0.5, face ="bold")
+left_titlePhoto <- text_grob("Phototrophic eukaryotes", size = 18, rot = 90, hjust = 0.5, vjust = 0.5, face ="bold")
+left_titleOthers <- text_grob("Non-phototrophic eukaryotes", size = 18, rot = 90, hjust = 0.5, vjust = 0.5, face ="bold")
+
+FigureS7A <- ggarrange(left_titleBact, Graphbar_16S_phylum_water, Graphbar_16S_family_water, ncol = 3, nrow = 1, labels = c(" ", "A", "B"), font.label = list(size = 18), widths = c(0.05, 1, 1))
+FigureS7B <- ggarrange(left_titlePhoto, Graphbar_18S_photo_phylum_water, Graphbar_18S_photo_class_water, ncol = 3, nrow = 1, labels = c(" ", "C", "D"), font.label = list(size = 18), widths = c(0.05, 1, 1))
+FigureS7C <- ggarrange(left_titleOthers, Graphbar_18S_others_phylum_water, Graphbar_18S_others_class_water, ncol = 3, nrow = 1, labels = c(" ", "E", "F"), font.label = list(size = 18), widths = c(0.05, 1, 1))
+FigureS7 <- ggarrange(FigureS7A, FigureS7B, FigureS7C, ncol = 1, nrow = 3)
+FigureS7  
+ggsave("FigureS7.pdf", FigureS7, width = 50,
+       height = 70,
+       units = "cm")
+
+
+### NMDS biofilm and water --------------------------------------------------
+
+##Hellinger transformation
+Sentinel16S_2022_bacteria_filt_hell <- microbiome::transform(Sentinel16S_2022_bacteria_filt, 'hell')
+Sentinel16S_2022_bacteria_filt_merged_hell <- microbiome::transform(Sentinel16S_2022_bacteria_filt_merged, 'hell')
+Sentinel16S_2022_water_bacteria_hell <- microbiome::transform(Sentinel16S_2022_water_bacteria, 'hell')
+
+
+phyloseq_2022_water_16S_tax <- tax_table(Sentinel16S_2022_water_bacteria_hell)
+phyloseq_2022_water_16S_asv <- otu_table(Sentinel16S_2022_water_bacteria_hell)
+phyloseq_2022_water_16S_meta <- sample_data(Sentinel16S_2022_water_bacteria_hell)
+
+phyloseq_2022_biofilm_16S_tax <- tax_table(Sentinel16S_2022_bacteria_filt_merged_hell)
+phyloseq_2022_biofilm_16S_asv <- otu_table(Sentinel16S_2022_bacteria_filt_merged_hell)
+phyloseq_2022_biofilm_16S_meta <- sample_data(Sentinel16S_2022_bacteria_filt_merged_hell) %>% data.frame() %>% mutate(Type = as.character(Type), Type = if_else(is.na(Type), "Biofilm", Type)) %>% sample_data()
+
+tax_16S_all <- merge_phyloseq(phyloseq_2022_water_16S_tax, phyloseq_2022_biofilm_16S_tax)
+asv_16S_all <- merge_phyloseq(phyloseq_2022_water_16S_asv, phyloseq_2022_biofilm_16S_asv)
+meta_16S_all <- merge_phyloseq(phyloseq_2022_water_16S_meta, phyloseq_2022_biofilm_16S_meta)
+
+NMDS_all_16S_2022 <- merge_phyloseq(tax_16S_all, asv_16S_all, meta_16S_all)
+
+matrix_dist_16S_2022_all <- as.matrix(t(data.frame(otu_table(NMDS_all_16S_2022))))
+metadata_dist_16S_2022_all <- data.frame(sample_data(NMDS_all_16S_2022)) %>% rownames_to_column("Samples")
+set.seed(19950930)
+dist_16S_2022_bray_all <- vegdist(matrix_dist_16S_2022_all, method ="bray") %>% 
+  as.matrix() %>% 
+  data.frame() %>% 
+  rownames_to_column("Samples")
+dist_16S_2022_all <- dist_16S_2022_bray_all %>% 
+  dplyr::select(all_of(.[["Samples"]])) %>% 
+  as.dist()
+nmds_16S_2022_all <- metaMDS(dist_16S_2022_all, trymax=100)
+stress_16S_all <- nmds_16S_2022_all$stress
+stress_16S_all
+
+scores_nmds_16S_2022_all <- scores(nmds_16S_2022_all) %>% 
+  as_tibble(rownames = "Samples") %>% 
+  inner_join(., metadata_dist_16S_2022_all, by="Samples")
+
+scores_nmds_16S_2022_all  <- scores_nmds_16S_2022_all[order(scores_nmds_16S_2022_all$Treatment, scores_nmds_16S_2022_all$Time),]
+
+#Differences?
+adonis_bc_16S_all <- adonis2(matrix_dist_16S_2022_all ~ Type, data=metadata_dist_16S_2022_all, permutations=999, method="bray")
+adonis_bc_16S_all #Type are significant 
+
+NMDS_16S_2022_all <- ggplot(scores_nmds_16S_2022_all, aes(x = NMDS1, y = NMDS2)) +
+  geom_point(aes(NMDS1, NMDS2, colour = Succession, shape = Type), size = 4, alpha = 0.8) +
+  scale_color_viridis(discrete = FALSE, option = "viridis", breaks = c(0, 20, 40, 60, 80, 100)) +
+  theme_classic() +
+  guides(colour = guide_colourbar(barheight = 10)) +
+  labs(color = "Days of growth", caption = "Stress 0.087") +
+  scale_x_continuous(limits = c(-0.6, 0.5)) +
+  theme(legend.title = element_text(size = 16, face = "bold"),
+        legend.text = element_text(size = 16),
+        axis.title.y = element_text(size = 16, face = "bold"),
+        axis.title.x = element_text(size = 16, face = "bold"),
+        axis.text = element_text(size = 12),
+        strip.background = element_blank(),
+        plot.caption = element_text(size = 16, hjust = 1, vjust = 20),
+        strip.text = element_text(size = 16, face = "bold"),
+        axis.line = element_line())
+NMDS_16S_2022_all
+
+FigureS15 <- ggarrange(NMDS_16S_2022_all, NMDS_18S_photo_2022_all, NMDS_18S_others_2022_all, ncol = 1, nrow = 3, labels = c("A", "B", "C"), font.label = list(size = 18), align = "v")
+FigureS15
+
+ggsave("Figure15.pdf", FigureS15, width = 30,
+       height = 40,
+       units = "cm")
+
+
+

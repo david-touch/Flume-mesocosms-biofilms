@@ -21,6 +21,7 @@ library(microViz)
 library(scales)
 library(ggtext) 
 library(ggrepel)
+library(metR)
 
 options(scipen=999)
 
@@ -39,95 +40,20 @@ sample_data(Sentinel18S_2022_eukaryote_filt) <- data.frame(sample_data(Sentinel1
   mutate(BA = mean(BA), ChlA = mean(ChlA)) %>% 
   column_to_rownames() %>% 
   sample_data()
+sample_data(Sentinel18S_2022_photo_filt) <- data.frame(sample_data(Sentinel18S_2022_photo_filt)) %>% 
+  rownames_to_column() %>% 
+  group_by(Sample) %>% 
+  mutate(BA = mean(BA), ChlA = mean(ChlA)) %>% 
+  column_to_rownames() %>% 
+  sample_data()
+sample_data(Sentinel18S_2022_others_filt) <- data.frame(sample_data(Sentinel18S_2022_others_filt)) %>% 
+  rownames_to_column() %>% 
+  group_by(Sample) %>% 
+  mutate(BA = mean(BA), ChlA = mean(ChlA)) %>% 
+  column_to_rownames() %>% 
+  sample_data()
 
-##Count number of reads
-reads_16S <- sum(unlist(otu_table(Sentinel16S_2022_bacteria_filt)), na.rm = TRUE)
-reads_18S <- sum(unlist(otu_table(Sentinel18S_2022_eukaryote_filt)), na.rm = TRUE)
-
-##Fixing taxonomy
-Sentinel16S_2022_bacteria_filt <- Sentinel16S_2022_bacteria_filt %>% tax_fix(
-  min_length = 4,
-  unknowns = c("Gammaproteobacteria_Incertae_Sedis", "Incertae_Sedis", "Synechococcales_Incertae_Sedis", "Cyanobacteriales_Incertae_Sedis", "Rhizobiales_Incertae_Sedis", "Incertae_Sedis Genus", "Oxyphotobacteria_Incertae_Sedis", "uncultured", "Unknown_Family"),
-  sep = " ", anon_unique = TRUE,
-  suffix_rank = "classified")
-
-reads_18S <- sum(unlist(otu_table(Sentinel18S_2022_eukaryote_filt)), na.rm = TRUE)
-
-Sentinel16S_2022_bacteria_filt_merged <- Sentinel16S_2022_bacteria_filt_merged %>%
-  tax_fix(unknowns = c("Gammaproteobacteria_Incertae_Sedis", "Incertae_Sedis", "Synechococcales_Incertae_Sedis", "Cyanobacteriales_Incertae_Sedis", "Rhizobiales_Incertae_Sedis", "Incertae_Sedis Genus", "Oxyphotobacteria_Incertae_Sedis", "uncultured", "Unknown_Family"))
-
-Sentinel18S_2022_eukaryote_filt <- Sentinel18S_2022_eukaryote_filt %>% tax_fix(
-  min_length = 4,
-  unknowns = c("Incertae_Sedis", "uncultured", "LKM11"),
-  sep = " ", anon_unique = TRUE,
-  suffix_rank = "classified")
-tax_table(Sentinel18S_2022_eukaryote_filt) <- tax_table(Sentinel18S_2022_eukaryote_filt) %>% 
-  data.frame() %>% 
-  mutate(Order = replace(Order, Order == "Bacillariophyceae", "Bacillariophyceae Class"),
-         Family = replace(Family, Family == "Bacillariophyceae", "Bacillariophyceae Class"),
-         Genus = replace(Genus, Genus == "Bacillariophyceae", "Bacillariophyceae Class")) %>% 
-  mutate(Family = replace(Family, Family == "Monhysterida", "Monhysterida Order"),
-         Genus = replace(Genus, Genus == "Monhysterida", "Monhysterida Order")) %>% 
-  mutate(Genus = replace(Genus, Genus == "Vampyrellidae", "Vampyrellidae Family")) %>%
-  mutate(Class = replace(Class, Class == "Labyrinthulomycetes", "Labyrinthulomycetes Phylum"),
-         Order = replace(Order, Order == "Labyrinthulomycetes", "Labyrinthulomycetes Phylum"),
-         Family = replace(Family, Family == "Labyrinthulomycetes", "Labyrinthulomycetes Phylum"),
-         Genus = replace(Genus, Genus == "Labyrinthulomycetes", "Labyrinthulomycetes Phylum")) %>% 
-  mutate(Genus = replace(Genus, Genus == "Bacillariophyceae Family", "Bacillariophyceae Class"),
-         Species = replace(Genus, Species == "Bacillariophyceae Family", "Bacillariophyceae Class"),
-         Family = replace(Family, Family == "Labyrinthulomycetes Order", "Labyrinthulomycetes Phylum")) %>% 
-  mutate(Genus = replace(Genus, Genus == "Labyrinthulomycetes Order", "Labyrinthulomycetes Phylum"),
-         Species = replace(Genus, Species == "Labyrinthulomycetes Order", "Labyrinthulomycetes Phylum"),
-         Phylum = replace(Phylum, Phylum == "Labyrinthulomycetes", "Eukaryota Kingdom")) %>% 
-  mutate(Class = replace(Class, Class == "Cercozoa", "Cercozoa Phylum"),
-         Order = replace(Order, Order == "Cercozoa", "Cercozoa Phylum"),
-         Family = replace(Family, Family == "Cercozoa", "Cercozoa Phylum"),
-         Genus = replace(Genus, Genus == "Cercozoa", "Cercozoa Phylum")) %>% 
-  mutate(Class = replace(Class, Class == "Aphelidea", "Aphelidea Phylum"),
-         Order = replace(Order, Order == "Aphelidea", "Aphelidea Phylum"),
-         Family = replace(Family, Family == "Aphelidea", "Aphelidea Phylum"),
-         Genus = replace(Genus, Genus == "Aphelidea", "Aphelidea Phylum")) %>% 
-  mutate(Genus = replace(Genus, Genus == "Aphelidea Familly", "Aphelidea Phylum")) %>% 
-  as.matrix() %>% 
-  tax_table()
-Sentinel18S_2022_eukaryote_filt
-
-Sentinel18S_2022_eukaryote_filt_merged <- Sentinel18S_2022_eukaryote_filt_merged %>% tax_fix(
-  min_length = 4,
-  unknowns = c("Incertae_Sedis", "uncultured", "LKM11"),
-  sep = " ", anon_unique = TRUE,
-  suffix_rank = "classified")
-tax_table(Sentinel18S_2022_eukaryote_filt_merged) <- tax_table(Sentinel18S_2022_eukaryote_filt_merged) %>% 
-  data.frame() %>% 
-  mutate(Order = replace(Order, Order == "Bacillariophyceae", "Bacillariophyceae Class"),
-         Family = replace(Family, Family == "Bacillariophyceae", "Bacillariophyceae Class"),
-         Genus = replace(Genus, Genus == "Bacillariophyceae", "Bacillariophyceae Class")) %>% 
-  mutate(Family = replace(Family, Family == "Monhysterida", "Monhysterida Order"),
-         Genus = replace(Genus, Genus == "Monhysterida", "Monhysterida Order")) %>% 
-  mutate(Genus = replace(Genus, Genus == "Vampyrellidae", "Vampyrellidae Family")) %>%
-  mutate(Class = replace(Class, Class == "Labyrinthulomycetes", "Labyrinthulomycetes Phylum"),
-         Order = replace(Order, Order == "Labyrinthulomycetes", "Labyrinthulomycetes Phylum"),
-         Family = replace(Family, Family == "Labyrinthulomycetes", "Labyrinthulomycetes Phylum"),
-         Genus = replace(Genus, Genus == "Labyrinthulomycetes", "Labyrinthulomycetes Phylum")) %>% 
-  mutate(Genus = replace(Genus, Genus == "Bacillariophyceae Family", "Bacillariophyceae Class"),
-         Species = replace(Genus, Species == "Bacillariophyceae Family", "Bacillariophyceae Class"),
-         Family = replace(Family, Family == "Labyrinthulomycetes Order", "Labyrinthulomycetes Phylum")) %>% 
-  mutate(Genus = replace(Genus, Genus == "Labyrinthulomycetes Order", "Labyrinthulomycetes Phylum"),
-         Species = replace(Genus, Species == "Labyrinthulomycetes Order", "Labyrinthulomycetes Phylum"),
-         Phylum = replace(Phylum, Phylum == "Labyrinthulomycetes", "Eukaryota Kingdom")) %>% 
-  mutate(Class = replace(Class, Class == "Cercozoa", "Cercozoa Phylum"),
-         Order = replace(Order, Order == "Cercozoa", "Cercozoa Phylum"),
-         Family = replace(Family, Family == "Cercozoa", "Cercozoa Phylum"),
-         Genus = replace(Genus, Genus == "Cercozoa", "Cercozoa Phylum")) %>% 
-  mutate(Class = replace(Class, Class == "Aphelidea", "Aphelidea Phylum"),
-         Order = replace(Order, Order == "Aphelidea", "Aphelidea Phylum"),
-         Family = replace(Family, Family == "Aphelidea", "Aphelidea Phylum"),
-         Genus = replace(Genus, Genus == "Aphelidea", "Aphelidea Phylum")) %>% 
-  mutate(Genus = replace(Genus, Genus == "Aphelidea Familly", "Aphelidea Phylum")) %>% 
-  as.matrix() %>% 
-  tax_table()
-Sentinel18S_2022_eukaryote_filt_merged
-
+#Taxonomy files
 taxonomy_16S <- data.frame(tax_table(Sentinel16S_2022_bacteria_filt)) %>% 
   select(-Species) %>% 
   distinct(Genus, .keep_all = TRUE)
@@ -135,12 +61,6 @@ taxonomy_16S <- data.frame(tax_table(Sentinel16S_2022_bacteria_filt)) %>%
 taxonomy_18S <- data.frame(tax_table(Sentinel18S_2022_eukaryote_filt)) %>% 
   select(-Species) %>% 
   distinct(Genus, .keep_all = TRUE)
-
-##Hellinger transformation
-Sentinel16S_2022_bacteria_filt_hell <- microbiome::transform(Sentinel16S_2022_bacteria_filt, 'hell')
-Sentinel16S_2022_bacteria_filt_merged_hell <- microbiome::transform(Sentinel16S_2022_bacteria_filt_merged, 'hell')
-Sentinel18S_2022_eukaryote_filt_hell <- microbiome::transform(Sentinel18S_2022_eukaryote_filt, 'hell')
-Sentinel18S_2022_eukaryote_filt_merged_hell <- microbiome::transform(Sentinel18S_2022_eukaryote_filt_merged, 'hell')
 
 
 ### Taxonomy ----------------------------------------------------------------
@@ -209,7 +129,7 @@ Graphbar_genus_16S <- Sentinel16S_2022_bacteria_filt_merged %>%
   comp_barplot(
     tax_level = "Genus", n_taxa = 14,
     x = "Time",
-    bar_outline_colour = NA,
+    bar_outline_colour = "grey5",
     merge_other = TRUE,
     sample_order = "default",
     bar_width = 0.9) + 
@@ -219,7 +139,7 @@ Graphbar_genus_16S <- Sentinel16S_2022_bacteria_filt_merged %>%
   theme(axis.text.y = element_text(size = 14),
         axis.text.x = element_text(size = 14),
         legend.position = "bottom",
-        legend.text = element_text(size = 15),
+        legend.text = element_text(size = 14),
         legend.title = element_text(size = 16, face = "bold", angle = 90, hjust = 0.5, vjust = 0.5),
         axis.title.y = element_text(size=16, face="bold"),
         axis.title.x = element_text(size=16, face="bold"),
@@ -231,7 +151,7 @@ ggsave("F2A.png", Graphbar_genus_16S, width = 30,
        height = 20,
        units = "cm")
 
-#Figure S4A
+#Figure S5A
 Graphbar_phylum_16S_all <- Sentinel16S_2022_bacteria_filt_merged %>%
   ps_arrange(Succession) %>%
   comp_barplot(
@@ -254,11 +174,11 @@ Graphbar_phylum_16S_all <- Sentinel16S_2022_bacteria_filt_merged %>%
         axis.title.x = element_text(size=14, face="bold"),
         strip.text = element_text(size = 16))
 Graphbar_phylum_16S_all
-ggsave("FS4A.png", Graphbar_phylum_16S_all, width = 50,
+ggsave("FS5A.png", Graphbar_phylum_16S_all, width = 50,
        height = 20,
        units = "cm")
 
-#Figure S4B
+#Figure S5B
 Graphbar_family_16S_all <- Sentinel16S_2022_bacteria_filt_merged %>%
   tax_fix(unknowns = c("uncultured", "Unknown_Family")) %>% 
   ps_arrange(Succession) %>%
@@ -282,11 +202,11 @@ Graphbar_family_16S_all <- Sentinel16S_2022_bacteria_filt_merged %>%
         axis.title.x = element_text(size=14, face="bold"),
         strip.text = element_text(size = 16))
 Graphbar_family_16S_all
-ggsave("FS4B.png", Graphbar_family_16S_all, width = 50,
+ggsave("FS5B.png", Graphbar_family_16S_all, width = 50,
        height = 20,
        units = "cm")
 
-#Figure S4C
+#Figure S5C
 Graphbar_genus_16S_all <- Sentinel16S_2022_bacteria_filt_merged %>%
   tax_fix(unknowns = c("uncultured", "Unknown_Family")) %>% 
   ps_arrange(Succession) %>%
@@ -310,15 +230,15 @@ Graphbar_genus_16S_all <- Sentinel16S_2022_bacteria_filt_merged %>%
         axis.title.x = element_text(size=14, face="bold"),
         strip.text = element_text(size = 16))
 Graphbar_genus_16S_all
-ggsave("FS4C.png", Graphbar_genus_16S_all, width = 50,
+ggsave("FS5C.png", Graphbar_genus_16S_all, width = 50,
        height = 20,
        units = "cm")
 
-#Merging Figure S4
-FigureS4 <- ggarrange(Graphbar_phylum_16S_all, Graphbar_family_16S_all, Graphbar_genus_16S_all, ncol = 1, nrow = 3, labels = c("A", "B", "C"), font.label = list(size = 18))
-FigureS4 <- annotate_figure(FigureS4, right = text_grob("Temperature regimes", size = 16, face = "bold", rot = 270), top = text_grob("Flow regimes", size = 16, face = "bold"))
-FigureS4  
-ggsave("FigureS4.pdf", FigureS4, width = 50,
+#Merging Figure S5
+FigureS5 <- ggarrange(Graphbar_phylum_16S_all, Graphbar_family_16S_all, Graphbar_genus_16S_all, ncol = 1, nrow = 3, labels = c("A", "B", "C"), font.label = list(size = 18))
+FigureS5 <- annotate_figure(FigureS5, right = text_grob("Temperature regimes", size = 16, face = "bold", rot = 270), top = text_grob("Flow regimes", size = 16, face = "bold"))
+FigureS5
+ggsave("FigureS5.pdf", FigureS5, width = 50,
        height = 70,
        units = "cm")
 
@@ -327,8 +247,12 @@ ggsave("FigureS4.pdf", FigureS4, width = 50,
 #Transform in relative abundance
 Sentinel18S_2022_eukaryote_filt_merged_relative <- transform_sample_counts(Sentinel18S_2022_eukaryote_filt_merged, function(x) x / sum(x))
 Sentinel18S_2022_eukaryote_filt_merged_relative
-#Sentinel18S_2022_eukaryote_filt_merged_class_relative <- transform_sample_counts(Sentinel18S_2022_eukaryote_filt_merged_class, function(x) x / sum(x))
-#Sentinel18S_2022_eukaryote_filt_merged_class_relative
+
+Sentinel18S_2022_photo_filt_merged_relative <- transform_sample_counts(Sentinel18S_2022_photo_filt_merged, function(x) x / sum(x))
+Sentinel18S_2022_photo_filt_merged_relative
+
+Sentinel18S_2022_others_filt_merged_relative <- transform_sample_counts(Sentinel18S_2022_others_filt_merged, function(x) x / sum(x))
+Sentinel18S_2022_others_filt_merged_relative
 
 #Export ASV_TAX table
 ASV18S <- data.frame(otu_table(Sentinel18S_2022_eukaryote_filt_merged_relative)) %>% rownames_to_column()
@@ -351,7 +275,7 @@ write.table(Sentinel18S_2022_eukaryote_filt_merged_relative %>% tax_glom(taxrank
             file = "18S.relative_abundance.genus.tsv", sep = "\t", quote = F, row.names = F, col.names = T)
 
 #Get taxa summary 
-Phylum_18S <- Sentinel18S_2022_eukaryote_filt_merged_relative %>% 
+Phylum_18S_photo <- Sentinel18S_2022_photo_filt_merged_relative %>% 
   tax_glom(taxrank = "Phylum") %>% 
   transform_sample_counts(function(x) {x*100}) %>% 
   psmelt() %>% 
@@ -361,7 +285,7 @@ Phylum_18S <- Sentinel18S_2022_eukaryote_filt_merged_relative %>%
   select(-Abundance) %>% 
   distinct(Phylum, .keep_all = TRUE)
 
-Class_18S <- Sentinel18S_2022_eukaryote_filt_merged_relative %>% 
+Class_18S_photo <- Sentinel18S_2022_photo_filt_merged_relative %>% 
   tax_glom(taxrank = "Class") %>% 
   transform_sample_counts(function(x) {x*100}) %>% 
   psmelt() %>% 
@@ -371,7 +295,7 @@ Class_18S <- Sentinel18S_2022_eukaryote_filt_merged_relative %>%
   select(-Abundance) %>% 
   distinct(Class, .keep_all = TRUE)
 
-Genus_18S <- Sentinel18S_2022_eukaryote_filt_merged_relative %>%
+Genus_18S_photo <- Sentinel18S_2022_photo_filt_merged_relative %>%
   tax_glom(taxrank = "Genus") %>% 
   transform_sample_counts(function(x) {x*100}) %>% 
   psmelt() %>% 
@@ -381,14 +305,44 @@ Genus_18S <- Sentinel18S_2022_eukaryote_filt_merged_relative %>%
   select(-Abundance) %>% 
   distinct(Genus, .keep_all = TRUE)
 
-#Plot Graph-Bar at Class level (Figure 2B)
-Graphbar_class_18S <- Sentinel18S_2022_eukaryote_filt_merged %>%
+Phylum_18S_others <- Sentinel18S_2022_others_filt_merged_relative %>% 
+  tax_glom(taxrank = "Phylum") %>% 
+  transform_sample_counts(function(x) {x*100}) %>% 
+  psmelt() %>% 
+  dplyr::select(Phylum, Abundance) %>% 
+  dplyr::group_by(Phylum) %>% 
+  mutate(Average = mean(Abundance), SD = sd(Abundance)) %>% 
+  select(-Abundance) %>% 
+  distinct(Phylum, .keep_all = TRUE)
+
+Class_18S_others <- Sentinel18S_2022_others_filt_merged_relative %>% 
+  tax_glom(taxrank = "Class") %>% 
+  transform_sample_counts(function(x) {x*100}) %>% 
+  psmelt() %>% 
+  dplyr::select(Class, Abundance) %>% 
+  group_by(Class) %>% 
+  mutate(Average = mean(Abundance), SD = sd(Abundance)) %>% 
+  select(-Abundance) %>% 
+  distinct(Class, .keep_all = TRUE)
+
+Genus_18S_others <- Sentinel18S_2022_others_filt_merged_relative %>%
+  tax_glom(taxrank = "Genus") %>% 
+  transform_sample_counts(function(x) {x*100}) %>% 
+  psmelt() %>% 
+  dplyr::select(Genus, Abundance) %>% 
+  group_by(Genus) %>% 
+  mutate(Average = mean(Abundance), SD = sd(Abundance)) %>% 
+  select(-Abundance) %>% 
+  distinct(Genus, .keep_all = TRUE)
+
+#Plot Graph-Bar at Class level photo only (Figure 2B)
+Graphbar_class_18S_photo <- Sentinel18S_2022_photo_filt_merged %>%
   merge_samples(group = "Succession") %>%
   ps_arrange(Succession) %>%
   comp_barplot(
     tax_level = "Class", n_taxa = 14,
     x = "Time",
-    bar_outline_colour = NA,
+    bar_outline_colour = "grey5",
     merge_other = TRUE,
     sample_order = "default",
     palette = distinct_palette(14, pal = "kelly"),
@@ -399,20 +353,20 @@ Graphbar_class_18S <- Sentinel18S_2022_eukaryote_filt_merged %>%
   theme(axis.text.y = element_text(size = 14),
         axis.text.x = element_text(size = 14), 
         legend.position = "bottom",
-        legend.text = element_text(size = 15),
+        legend.text = element_text(size = 14),
         legend.title = element_text(size = 16, face = "bold", angle = 90, hjust = 0.5, vjust = 0.5),
         axis.title.y = element_text(size=16, face="bold"),
         axis.title.x = element_text(size=16, face="bold"),
         strip.text = element_text(size = 16), 
         plot.margin = margin(1, 1, 1, 1, "cm")) +
   guides(fill = guide_legend(ncol = 3))
-Graphbar_class_18S
-ggsave("F2B.png", Graphbar_class_18S, width = 30,
+Graphbar_class_18S_photo
+ggsave("F2B.png", Graphbar_class_18S_photo, width = 30,
        height = 20,
        units = "cm")
 
-#Figure S6A
-Graphbar_phylum_18S_all <- Sentinel18S_2022_eukaryote_filt_merged %>%
+#Figure S7A
+Graphbar_phylum_18S_photo_all <- Sentinel18S_2022_photo_filt_merged %>%
   ps_arrange(Succession) %>%
   comp_barplot(
     tax_level = "Phylum", n_taxa = 14,
@@ -434,21 +388,21 @@ Graphbar_phylum_18S_all <- Sentinel18S_2022_eukaryote_filt_merged %>%
         axis.title.y = element_text(size=14, face="bold"),
         axis.title.x = element_text(size=14, face="bold"),
         strip.text = element_text(size = 16))
-Graphbar_phylum_18S_all
-ggsave("FS6A.png", Graphbar_phylum_18S_all, width = 50,
+Graphbar_phylum_18S_photo_all
+ggsave("FS6A.png", Graphbar_phylum_18S_photo_all, width = 50,
        height = 20,
        units = "cm")
 
 #Figure S6B
-Graphbar_class_18S_all <- Sentinel18S_2022_eukaryote_filt_merged %>%
+Graphbar_class_18S_photo_all <- Sentinel18S_2022_photo_filt_merged %>%
   ps_arrange(Succession) %>%
   comp_barplot(
-    tax_level = "Class", n_taxa = 15,
+    tax_level = "Class", n_taxa = 14,
     x = "Time",
     bar_outline_colour = "grey5",
     merge_other = FALSE,
     sample_order = "default",
-    palette = distinct_palette(15, pal = "kelly"),
+    palette = distinct_palette(14, pal = "kelly"),
     bar_width = 0.9) + 
   labs(x = "Days of growth") +
   xlim("5", "10", "14", "19", "24", "26","28", "33", "38", "40", "42", "47", "54", "61", "67", "75", "82", "87", "89", "91", "96", "103") +
@@ -462,21 +416,21 @@ Graphbar_class_18S_all <- Sentinel18S_2022_eukaryote_filt_merged %>%
         axis.title.y = element_text(size=14, face="bold"),
         axis.title.x = element_text(size=14, face="bold"),
         strip.text = element_text(size = 16))
-Graphbar_class_18S_all
-ggsave("FS6B.png", Graphbar_class_18S_all, width = 50,
+Graphbar_class_18S_photo_all
+ggsave("FS6B.png", Graphbar_class_18S_photo_all, width = 50,
        height = 20,
        units = "cm")
 
 #Figure S6C
-Graphbar_genus_18S_all <- Sentinel18S_2022_eukaryote_filt_merged %>%
+Graphbar_genus_18S_photo_all <- Sentinel18S_2022_photo_filt_merged %>%
   ps_arrange(Succession) %>%
   comp_barplot(
-    tax_level = "Genus", n_taxa = 15,
+    tax_level = "Genus", n_taxa = 14,
     x = "Time",
     bar_outline_colour = "grey5",
     merge_other = FALSE,
     sample_order = "default",
-    palette = distinct_palette(15, pal = "kelly"),
+    palette = distinct_palette(14, pal = "kelly"),
     bar_width = 0.9) + 
   labs(x = "Days of growth") +
   xlim("5", "10", "14", "19", "24", "26","28", "33", "38", "40", "42", "47", "54", "61", "67", "75", "82", "87", "89", "91", "96", "103") +
@@ -490,16 +444,117 @@ Graphbar_genus_18S_all <- Sentinel18S_2022_eukaryote_filt_merged %>%
         axis.title.y = element_text(size=14, face="bold"),
         axis.title.x = element_text(size=14, face="bold"),
         strip.text = element_text(size = 16))
-Graphbar_genus_18S_all
-ggsave("FS6C.png", Graphbar_genus_18S_all, width = 50,
+Graphbar_genus_18S_photo_all
+ggsave("FS6C.png", Graphbar_genus_18S_photo_all, width = 50,
        height = 20,
        units = "cm")
 
 #Merging Figure S6
-FigureS6 <- ggarrange(Graphbar_phylum_18S_all, Graphbar_class_18S_all, Graphbar_genus_18S_all, ncol = 1, nrow = 3, labels = c("A", "B", "C"), font.label = list(size = 18))
-FigureS6 <- annotate_figure(FigureS6, right = text_grob("Temperature regimes", size = 16, face = "bold", rot = 270), top = text_grob("Flow regimes", size = 16, face = "bold"))
-FigureS6
-ggsave("FigureS6.pdf", FigureS6, width = 50,
+FigureS8 <- ggarrange(Graphbar_phylum_18S_photo_all, Graphbar_class_18S_photo_all, Graphbar_genus_18S_photo_all, ncol = 1, nrow = 3, labels = c("A", "B", "C"), font.label = list(size = 18))
+FigureS8 <- annotate_figure(FigureS8, right = text_grob("Temperature regimes", size = 16, face = "bold", rot = 270), top = text_grob("Flow regimes", size = 16, face = "bold"))
+FigureS8
+ggsave("FigureS8.pdf", FigureS8, width = 50,
+       height = 70,
+       units = "cm")
+
+#New palettes
+myPal2_phylum <- tax_palette(data = Sentinel18S_2022_others_filt_merged, rank = "Phylum", n = 20, pal = "greenArmytage", add = c(Other = "lightgray"))
+myPal2_phylum[1] <- "darkorange"
+myPal2_class <- tax_palette(data = Sentinel18S_2022_others_filt_merged, rank = "Class", n = 20, pal = "greenArmytage", add = c(Other = "lightgray"))
+myPal2_class[1] <- "darkorange"
+myPal2_genus <- tax_palette(data = Sentinel18S_2022_others_filt_merged, rank = "Genus", n = 20, pal = "greenArmytage", add = c(Other = "lightgray"))
+myPal2_genus[1] <- "darkorange"
+
+
+#Figure S8A
+Graphbar_phylum_18S_others_all <- Sentinel18S_2022_others_filt_merged %>%
+  ps_arrange(Succession) %>%
+  comp_barplot(
+    tax_level = "Phylum", n_taxa = 14,
+    x = "Time",
+    bar_outline_colour = "grey5",
+    merge_other = FALSE,
+    sample_order = "default",
+    palette = myPal2_phylum,
+    bar_width = 0.9) + 
+  labs(x = "Days of growth") +
+  xlim("5", "10", "14", "19", "24", "26","28", "33", "38", "40", "42", "47", "54", "61", "67", "75", "82", "87", "89", "91", "96", "103") +
+  scale_y_continuous(expand = c(0, 0.01)) +
+  facet_grid(cols = vars(factor(Flow, levels = c("Natural", "Intermittent", "Stochastic", "Constant"))) ,rows = vars(Temperature), scales = "free_y", space = "free_y") +
+  theme(axis.text.x = element_text(size = 10), 
+        axis.text.y = element_text(size = 14, face = "bold"), 
+        legend.position = "bottom",
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14, face = "bold"),
+        axis.title.y = element_text(size=14, face="bold"),
+        axis.title.x = element_text(size=14, face="bold"),
+        strip.text = element_text(size = 16))
+Graphbar_phylum_18S_others_all
+ggsave("FS8A.png", Graphbar_phylum_18S_others, width = 50,
+       height = 20,
+       units = "cm")
+
+#Figure S8B
+Graphbar_class_18S_others_all <- Sentinel18S_2022_others_filt_merged %>%
+  ps_arrange(Succession) %>%
+  comp_barplot(
+    tax_level = "Class", n_taxa = 14,
+    x = "Time",
+    bar_outline_colour = "grey5",
+    merge_other = FALSE,
+    sample_order = "default",
+    palette = myPal2_class,
+    bar_width = 0.9) + 
+  labs(x = "Days of growth") +
+  xlim("5", "10", "14", "19", "24", "26","28", "33", "38", "40", "42", "47", "54", "61", "67", "75", "82", "87", "89", "91", "96", "103") +
+  scale_y_continuous(expand = c(0, 0.01)) +
+  facet_grid(cols = vars(factor(Flow, levels = c("Natural", "Intermittent", "Stochastic", "Constant"))) ,rows = vars(Temperature), scales = "free_y", space = "free_y") +
+  theme(axis.text.x = element_text(size = 10), 
+        axis.text.y = element_text(size = 14, face = "bold"), 
+        legend.position = "bottom",
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14, face = "bold"),
+        axis.title.y = element_text(size=14, face="bold"),
+        axis.title.x = element_text(size=14, face="bold"),
+        strip.text = element_text(size = 16))
+Graphbar_class_18S_others_all
+ggsave("FS8B.png", Graphbar_class_18S_others, width = 50,
+       height = 20,
+       units = "cm")
+
+#Figure S8C
+Graphbar_genus_18S_others_all <- Sentinel18S_2022_others_filt_merged %>%
+  ps_arrange(Succession) %>%
+  comp_barplot(
+    tax_level = "Genus", n_taxa = 14,
+    x = "Time",
+    bar_outline_colour = "grey5",
+    merge_other = FALSE,
+    sample_order = "default",
+    palette = myPal2_genus,
+    bar_width = 0.9) + 
+  labs(x = "Days of growth") +
+  xlim("5", "10", "14", "19", "24", "26","28", "33", "38", "40", "42", "47", "54", "61", "67", "75", "82", "87", "89", "91", "96", "103") +
+  scale_y_continuous(expand = c(0, 0.01)) +
+  facet_grid(cols = vars(factor(Flow, levels = c("Natural", "Intermittent", "Stochastic", "Constant"))) ,rows = vars(Temperature), scales = "free_y", space = "free_y") +
+  theme(axis.text.x = element_text(size = 10), 
+        axis.text.y = element_text(size = 14, face = "bold"), 
+        legend.position = "bottom",
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14, face = "bold"),
+        axis.title.y = element_text(size=14, face="bold"),
+        axis.title.x = element_text(size=14, face="bold"),
+        strip.text = element_text(size = 16))
+Graphbar_genus_18S_others_all
+ggsave("FS8C.png", Graphbar_genus_18S_others, width = 50,
+       height = 20,
+       units = "cm")
+
+#Merging Figure S7
+FigureS9 <- ggarrange(Graphbar_phylum_18S_others_all, Graphbar_class_18S_others_all, Graphbar_genus_18S_others_all, ncol = 1, nrow = 3, labels = c("A", "B", "C"), font.label = list(size = 18))
+FigureS9 <- annotate_figure(FigureS9, right = text_grob("Temperature regimes", size = 16, face = "bold", rot = 270), top = text_grob("Flow regimes", size = 16, face = "bold"))
+FigureS9
+ggsave("FigureS9.pdf", FigureS8, width = 50,
        height = 70,
        units = "cm")
 
@@ -563,16 +618,23 @@ Shannon_16S_plot
 ##18S - Figure 2 
 
 # Calculate alpha diversity metrics
-alphadiv_18S <- estimate_richness(Sentinel18S_2022_eukaryote_filt, measures = c("Observed", "Shannon"))
-alphadiv_18S_df <- cbind(sample_data(Sentinel18S_2022_eukaryote_filt), alphadiv_18S) %>% mutate(Evenness = Shannon/log(Observed))
-sample_data(Sentinel18S_2022_eukaryote_filt) <- alphadiv_18S_df
+alphadiv_18S_photo <- estimate_richness(Sentinel18S_2022_photo_filt, measures = c("Observed", "Shannon"))
+alphadiv_18S_df_photo <- cbind(sample_data(Sentinel18S_2022_photo_filt), alphadiv_18S_photo) %>% mutate(Evenness = Shannon/log(Observed))
+sample_data(Sentinel18S_2022_photo_filt) <- alphadiv_18S_df_photo
+
+alphadiv_18S_others <- estimate_richness(Sentinel18S_2022_others_filt, measures = c("Observed", "Shannon"))
+alphadiv_18S_df_others <- cbind(sample_data(Sentinel18S_2022_others_filt), alphadiv_18S_others) %>% mutate(Evenness = Shannon/log(Observed))
+sample_data(Sentinel18S_2022_others_filt) <- alphadiv_18S_df_others
 
 #Extract metadata
-metadata_18S <- data.frame(sample_data(Sentinel18S_2022_eukaryote_filt))
-metadata_18S$Treatment <- factor(metadata_18S$Treatment, levels = c("Nc", "Nw", "Ic", "Iw", "Sc", "Sw", "Cc", "Cw"))
+metadata_18S_photo <- data.frame(sample_data(Sentinel18S_2022_photo_filt))
+metadata_18S_photo$Treatment <- factor(metadata_18S_photo$Treatment, levels = c("Nc", "Nw", "Ic", "Iw", "Sc", "Sw", "Cc", "Cw"))
+
+metadata_18S_others <- data.frame(sample_data(Sentinel18S_2022_others_filt))
+metadata_18S_others$Treatment <- factor(metadata_18S_others$Treatment, levels = c("Nc", "Nw", "Ic", "Iw", "Sc", "Sw", "Cc", "Cw"))
 
 #Plot Bacterial abundance over time (Figure 2D)
-ChlA_plot <- ggplot(metadata_18S, aes(x = Succession, group=Treatment, y = ChlA)) +
+ChlA_plot_photo <- ggplot(metadata_18S_others, aes(x = Succession, group=Treatment, y = ChlA)) +
   geom_point(aes(shape = Temperature), color= "gray", size = 3, alpha = 0.8) +
   geom_smooth(aes(color = Treatment, group = Treatment),linewidth = 1.25, se = FALSE, span = 0.5, lineend = "round") +
   scale_color_manual(values = c("#283747","#85929e","#b03a2e","#ec7063","#1e8449","#52be80", "#2874a6","#5dade2"),
@@ -589,10 +651,10 @@ ChlA_plot <- ggplot(metadata_18S, aes(x = Succession, group=Treatment, y = ChlA)
         legend.position = "none") +
   guides(shape = guide_legend(override.aes = list(size = 3.5)),
          colour = guide_legend(override.aes = list(linewidth= 3, linetype=2)))
-ChlA_plot
+ChlA_plot_photo
 
-#Plot Shannon diversity index over time (Figure 2F)
-Shannon_18S_plot <- ggplot(metadata_18S, aes(x = Succession, group=Treatment, y = Shannon)) +
+#Plot Shannon diversity index phototrophs over time (Figure 2F)
+Shannon_18S_plot_photo <- ggplot(metadata_18S_photo, aes(x = Succession, group=Treatment, y = Shannon)) +
   geom_point(aes(shape = Temperature), color= "gray", size = 3, alpha = 0.8) +
   geom_smooth(aes(color = Treatment, group = Treatment),linewidth = 1.25, se = FALSE, span = 0.5, lineend = "round") +
   scale_color_manual(values = c("#283747","#85929e","#b03a2e","#ec7063","#1e8449","#52be80", "#2874a6","#5dade2"),
@@ -611,27 +673,48 @@ Shannon_18S_plot <- ggplot(metadata_18S, aes(x = Succession, group=Treatment, y 
         plot.margin = margin(0, 0, 1, 0.4, "cm")) +
   guides(shape = guide_legend(override.aes = list(size = 3.5)),
          colour = guide_legend(override.aes = list(linewidth= 3, linetype=2)))
-Shannon_18S_plot
+Shannon_18S_plot_photo
+
+#Plot Shannon diversity index phototrophs over time (Figure S10A)
+Shannon_18S_plot_others <- ggplot(metadata_18S_others, aes(x = Succession, group=Treatment, y = Shannon)) +
+  geom_point(aes(shape = Temperature), color= "gray", size = 3, alpha = 0.8) +
+  geom_smooth(aes(color = Treatment, group = Treatment),linewidth = 1.25, se = FALSE, span = 0.5, lineend = "round") +
+  scale_color_manual(values = c("#283747","#85929e","#b03a2e","#ec7063","#1e8449","#52be80", "#2874a6","#5dade2"),
+                     labels= c(bquote("N"[flow]*"C"[temp]), bquote("N"[flow]*"W"[temp]), bquote("I"[flow]*"C"[temp]), bquote("I"[flow]*"W"[temp]), bquote("S"[flow]*"C"[temp]), bquote("S"[flow]*"W"[temp]), bquote("C"[flow]*"C"[temp]), bquote("C"[flow]*"W"[temp]))) +
+  scale_y_continuous(n.breaks=6) + 
+  theme_classic() +
+  ylab("Shannon index") +
+  xlab("Days of growth") +
+  theme(legend.title = element_text(size = 16, face="bold"), 
+        legend.text = element_text(size = 16),
+        axis.title.x = element_text(size = 16, face="bold"),
+        axis.title.y = element_text(size = 16, face="bold"),
+        axis.text.x =  element_text(size = 14), 
+        axis.text.y =  element_text(size = 14, angle=90, hjust = 0.5),
+        legend.position = "none",
+        plot.margin = margin(0, 0, 1, 0.4, "cm")) +
+  guides(shape = guide_legend(override.aes = list(size = 3.5)),
+         colour = guide_legend(override.aes = list(linewidth= 3, linetype=2)))
+Shannon_18S_plot_others
 
 #Merging Figure 2
 top_title1 <- text_grob("", size = 18, hjust = 0.5, vjust = 0.5, face ="bold")
 top_title2 <- text_grob("Bacteria", size = 18, hjust = 0.5, vjust = 0.5, face ="bold")
-top_title3 <- text_grob("Eukaryote", size = 18, hjust = 0.5, vjust = 0.5, face ="bold")
+top_title3 <- text_grob("Phototrophic eukaryotes", size = 18, hjust = 0.5, vjust = 0.5, face ="bold")
 left_title1 <- text_grob("Taxonomy", size = 18, rot = 90, hjust = 0.5, vjust = 0.5, face ="bold")
 left_title2 <- text_grob("Biomass", size = 18, rot = 90, hjust = 0.5, vjust = 0.5, face ="bold")
 left_title3 <- text_grob("Diversity", size = 18, rot = 90, hjust = 0.5, vjust = 0.5, face ="bold")
 
-Figure2.1 <- ggarrange(top_title1, top_title2, top_title3, left_title1, Graphbar_genus_16S, Graphbar_class_18S, ncol = 3, nrow = 2, labels = c("", "", "", "", "A", "B"), font.label = list(size = 18), common.legend = F, align = "h", heights = c(0.05, 1), widths = c(0.05, 1, 1))
+Figure2.1 <- ggarrange(top_title1, top_title2, top_title3, left_title1, Graphbar_genus_16S, Graphbar_class_18S_photo, ncol = 3, nrow = 2, labels = c("", "", "", "", "A", "B"), font.label = list(size = 18), common.legend = F, align = "h", heights = c(0.05, 1), widths = c(0.05, 1, 1))
 Figure2.1
-Figure2.2 <- ggarrange(left_title2, BA_plot, ChlA_plot, ncol = 3, nrow = 1, labels = c("", "C", "D"), font.label = list(size = 18), align = "h", widths = c(0.05, 1, 1))
+Figure2.2 <- ggarrange(left_title2, BA_plot, ChlA_plot_photo, ncol = 3, nrow = 1, labels = c("", "C", "D"), font.label = list(size = 18), align = "h", widths = c(0.05, 1, 1))
 Figure2.2
-Figure2.3a <- ggarrange(Shannon_16S_plot, Shannon_18S_plot, ncol = 2, nrow = 1, labels = c("E", "F"), font.label = list(size = 18), align = "h", common.legend = T, legend ="bottom")
+Figure2.3a <- ggarrange(Shannon_16S_plot, Shannon_18S_plot_photo, ncol = 2, nrow = 1, labels = c("E", "F"), font.label = list(size = 18), align = "h", common.legend = T, legend ="bottom")
 Figure2.3a
 Figure2.3 <- ggarrange(left_title3, Figure2.3a, ncol =, nrow = 1, widths = c(0.05, 2))  
 Figure2.3
 Figure2 <- ggarrange(Figure2.1, Figure2.2, Figure2.3, ncol = 1, nrow = 3, align = "v", heights = c(1, 0.70, 0.8))
 Figure2
-
 ggsave("Figure2.pdf", Figure2, width = 40,
        height = 50,
        units = "cm")
@@ -679,29 +762,21 @@ ordi_16S.mite <- expand.grid(x = ordi_16S.grid$x, y = ordi_16S.grid$y) #get x an
 ordi_16S.mite$z <- as.vector(ordi_16S.grid$z) #unravel the matrix for the z scores
 ordi_16S.mite.na <- data.frame(na.omit(ordi_16S.mite)) #gets rid of the nas
 
-NMDS_16S_merged_trajectories_2022 <- scores_nmds_16S_merged_2022 %>%
+NMDS_16S_merged_trajectories_2022_NI <- scores_nmds_16S_merged_2022 %>%
+  filter(Flow %in% c("Natural", "Intermittent")) %>% 
   ggplot(aes(x=NMDS1, y=NMDS2)) + 
   geom_point(aes(shape = Temperature), color = "darkgray", size = 3) +
   theme_classic() +
-  stat_contour(data = ordi_16S.mite.na, aes(x = x, y = y, z = z, colour = ..level..), linewidth = 0.75, linetype = "dashed") +
-  scale_colour_continuous(high = "black", low = "lightgray", breaks = c(10, 30, 50, 70, 90)) +
-  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Nc",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+  geom_contour(data = ordi_16S.mite.na, aes(x = x, y = y, z = z, colour=after_stat(level)), linewidth = 0.75, linetype = "dashed", color = "darkgray") +
+  geom_label_contour(data = ordi_16S.mite.na, aes(x = x, y = y, z = z), skip = 0, size = 4) +
+  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Nc",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
                arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#283747") +
-  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Nw",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Nw",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
                arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#85929e") +
-  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Ic",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Ic",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
                arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#b03a2e") +
-  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Iw",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Iw",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
                arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#ec7063") +
-  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Sc",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
-               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#1e8449") +
-  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Sw",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
-               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#52be80") +
-  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Cc",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
-               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#2874a6") +
-  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Cw",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
-               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#5dade2") +
-  labs(caption="Stress 0.075") +
   labs(color = "Days of growth") +
   ylim(-0.2,0.5) +
   xlim(-0.5,0.4) +
@@ -715,14 +790,82 @@ NMDS_16S_merged_trajectories_2022 <- scores_nmds_16S_merged_2022 %>%
         plot.caption = element_text(size=14, hjust=0.95, vjust = 25),
         axis.line=element_line(),
         legend.direction= "horizontal",
-        legend.position = c(0.25, 0.075),
-        legend.background = element_rect(fill = "transparent"))+
-  guides(shape = "none", 
-         colour = guide_legend(title.position = "top",title.hjust =0.5, override.aes = list(linetype=1, linewidth =2, fill = NA)))
-NMDS_16S_merged_trajectories_2022
+        legend.position = "none",
+        legend.background = element_rect(fill = "transparent"))
+NMDS_16S_merged_trajectories_2022_NI
+
+NMDS_16S_merged_trajectories_2022_NS <- scores_nmds_16S_merged_2022 %>%
+  filter(Flow %in% c("Natural", "Stochastic")) %>% 
+  ggplot(aes(x=NMDS1, y=NMDS2)) + 
+  geom_point(aes(shape = Temperature), color = "darkgray", size = 3) +
+  theme_classic() +
+  geom_contour(data = ordi_16S.mite.na, aes(x = x, y = y, z = z, colour=after_stat(level)), linewidth = 0.75, linetype = "dashed", color = "darkgray") +
+  geom_label_contour(data = ordi_16S.mite.na, aes(x = x, y = y, z = z), skip = 0, size = 4) +
+  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Nc",], aes(xend = lead(NMDS1), yend = lead(NMDS2)),
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#283747") +
+  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Nw",], aes(xend = lead(NMDS1), yend = lead(NMDS2)),
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#85929e") +
+  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Sc",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#1e8449") +
+  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Sw",], aes(xend = lead(NMDS1), yend = lead(NMDS2)),
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#52be80") +
+  labs(color = "Days of growth") +
+  ylim(-0.2,0.5) +
+  xlim(-0.5,0.4) +
+  theme(legend.title = element_text(size = 16, face="bold"), 
+        legend.text = element_text(size = 16),
+        axis.title.x = element_text(size = 16, face="bold"),
+        axis.title.y = element_text(size = 16, face="bold"),
+        axis.text =  element_text(size = 14),
+        strip.text = element_text(size=16, face="bold"),
+        strip.background = element_blank(),
+        plot.caption = element_text(size=14, hjust=0.95, vjust = 25),
+        axis.line=element_line(),
+        legend.direction= "horizontal",
+        legend.position = "none",
+        legend.background = element_rect(fill = "transparent"))
+NMDS_16S_merged_trajectories_2022_NS
+
+NMDS_16S_merged_trajectories_2022_NC <- scores_nmds_16S_merged_2022 %>%
+  filter(Flow %in% c("Natural", "Constant")) %>% 
+  ggplot(aes(x=NMDS1, y=NMDS2)) + 
+  geom_point(aes(shape = Temperature), color = "darkgray", size = 3) +
+  theme_classic() +
+  geom_contour(data = ordi_16S.mite.na, aes(x = x, y = y, z = z, colour=after_stat(level)), linewidth = 0.75, linetype = "dashed", color = "darkgray") +
+  geom_label_contour(data = ordi_16S.mite.na, aes(x = x, y = y, z = z), skip = 0, size = 4) +
+  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Nc",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#283747") +
+  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Nw",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#85929e") +
+  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Cc",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#2874a6") +
+  geom_segment(data=scores_nmds_16S_merged_2022[scores_nmds_16S_merged_2022$Treatment == "Cw",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#5dade2") +
+  labs(caption="Stress 0.075") +
+  labs(color = "Days of growth") +
+  ylim(-0.2,0.5) +
+  xlim(-0.5,0.4) +
+  theme(legend.title = element_text(size = 16, face="bold"), 
+        legend.text = element_text(size = 16),
+        axis.title.x = element_text(size = 16, face="bold"),
+        axis.title.y = element_text(size = 16, face="bold"),
+        axis.text =  element_text(size = 14),
+        strip.text = element_text(size=16, face="bold"),
+        strip.background = element_blank(),
+        plot.caption = element_text(size=14, hjust=1, vjust = 15),
+        axis.line=element_line(),
+        legend.direction= "horizontal",
+        legend.position = "none",
+        legend.background = element_rect(fill = "transparent"))
+NMDS_16S_merged_trajectories_2022_NC
+
+Figure3A <- ggarrange(top_title2, NMDS_16S_merged_trajectories_2022_NI + rremove("ylab") + rremove("xlab"), NMDS_16S_merged_trajectories_2022_NS + rremove("ylab") + rremove("xlab"), NMDS_16S_merged_trajectories_2022_NC + rremove("ylab") + rremove("xlab"), ncol = 1, nrow = 4, heights = c(0.1, 1, 1, 1))
+Figure3A  <- annotate_figure(Figure3A, left = text_grob("NMDS2", rot = 90, vjust = 1, size = 16, face = "bold"),
+                             bottom = text_grob("NMDS1", size = 16, face = "bold"))
+Figure3A 
 
 
-# Figure S8
+# Figure S12
 matrix_dist_16S_2022 <- as.matrix(t(data.frame(otu_table(Sentinel16S_2022_bacteria_filt_hell))))
 metadata_dist_16S_2022 <- data.frame(sample_data(Sentinel16S_2022_bacteria_filt_hell)) %>% rownames_to_column("Samples")
 set.seed(19950930)
@@ -769,7 +912,7 @@ fit_16S_env_pv_star <- fit_16S_env_pv %>%
   )) %>%
   mutate(EnvironmentSign = as.character(EnvironmentSign))
 
-NMDS_16S_merged_2022 <- ggplot(scores_nmds_16S_2022, aes(x = NMDS1, y = NMDS2)) +
+NMDS_16S_2022 <- ggplot(scores_nmds_16S_2022, aes(x = NMDS1, y = NMDS2)) +
   geom_point(aes(NMDS1, NMDS2, colour = Succession, shape = Flow), size = 2, alpha = 0.8) +
   scale_color_viridis(discrete = FALSE, option = "viridis", breaks = c(0, 20, 40, 60, 80, 100)) +
   theme_classic() +
@@ -795,68 +938,60 @@ NMDS_16S_merged_2022 <- ggplot(scores_nmds_16S_2022, aes(x = NMDS1, y = NMDS2)) 
                            segment.size = 0.25,
                            nudge_x = c(-0.105, 0, 0, -0.02, -0.01, -0.08, 0.02, -0.020, -0.02, -0.12, -0.105, -0.01, -0.04, 0.10, -0.09, -0.01, -0.10, -0.05, -0.115, -0.01, -0.11, -0.125, -0.005, -0.005, 0.07),
                            nudge_y = c(-0.010, -0.01, 0.01, 0.01, -0.03, 0.07, -0.07, -0.012, 0, -0.04, -0.030, -0.05, -0.01, 0.08, 0.05, 0.05, 0.02, 0.11, 0.030, -0.02, 0.10, 0.010, -0.010, 0.010, -0.05))
-NMDS_16S_merged_2022
+NMDS_16S_2022
 
-ggsave("FigureS8.pdf", NMDS_16S_merged_2022, width = 40,
+ggsave("FigureS12.pdf", NMDS_16S_2022, width = 40,
        height = 35,
        units = "cm")
 
 ##18S - Figure 3
 #Plot NMDS of Bray-Curtis dissimilarity, on Hellinger-transformed merged data (Figure 3B)
-factor(sample_data(Sentinel18S_2022_eukaryote_filt_merged_hell)$Treatment, levels = c("Nc", "Nw", "Ic", "Iw", "Sc", "Sw", "Cc", "Cw"))
+factor(sample_data(Sentinel18S_2022_photo_filt_merged_hell)$Treatment, levels = c("Nc", "Nw", "Ic", "Iw", "Sc", "Sw", "Cc", "Cw"))
 
-matrix_dist_18S_merged_2022 <- as.matrix(t(data.frame(otu_table(Sentinel18S_2022_eukaryote_filt_merged_hell))))
-metadata_dist_18S_merged_2022 <- data.frame(sample_data(Sentinel18S_2022_eukaryote_filt_merged_hell)) %>% rownames_to_column("Samples")
+matrix_dist_18S_photo_merged_2022 <- as.matrix(t(data.frame(otu_table(Sentinel18S_2022_photo_filt_merged_hell))))
+metadata_dist_18S_photo_merged_2022 <- data.frame(sample_data(Sentinel18S_2022_photo_filt_merged_hell)) %>% rownames_to_column("Samples")
 set.seed(19950930)
-dist_18S_merged_2022_bray <- vegdist(matrix_dist_18S_merged_2022, method ="bray") %>% 
+dist_18S_photo_merged_2022_bray <- vegdist(matrix_dist_18S_photo_merged_2022, method ="bray") %>% 
   as.matrix() %>% 
   data.frame() %>% 
   rownames_to_column("Samples")
-dist_18S_merged_2022 <- dist_18S_merged_2022_bray %>% 
+dist_18S_photo_merged_2022 <- dist_18S_photo_merged_2022_bray %>% 
   dplyr::select(all_of(.[["Samples"]])) %>% 
   as.dist()
-nmds_18S_merged_2022 <- metaMDS(dist_18S_merged_2022, trymax=100)
-stress <- nmds_18S_merged_2022$stress
+nmds_18S_photo_merged_2022 <- metaMDS(dist_18S_photo_merged_2022, trymax=100)
+stress <- nmds_18S_photo_merged_2022$stress
 stress
 
-scores_nmds_18S_merged_2022 <- scores(nmds_18S_merged_2022) %>% 
+scores_nmds_18S_photo_merged_2022 <- scores(nmds_18S_photo_merged_2022) %>% 
   as_tibble(rownames = "Samples") %>% 
-  inner_join(., metadata_dist_18S_merged_2022, by="Samples")
+  inner_join(., metadata_dist_18S_photo_merged_2022, by="Samples")
 
-scores_nmds_18S_merged_2022  <- scores_nmds_18S_merged_2022[order(scores_nmds_18S_merged_2022$Treatment, scores_nmds_18S_merged_2022$Time),]
+scores_nmds_18S_photo_merged_2022  <- scores_nmds_18S_photo_merged_2022[order(scores_nmds_18S_photo_merged_2022$Treatment, scores_nmds_18S_photo_merged_2022$Time),]
 
-ordi_18S <- ordisurf(nmds_18S_merged_2022, metadata_dist_18S_merged_2022$Succession, plot = FALSE, bs="ds")
-ordi_18S.grid <- ordi_18S$grid #extracts the ordisurf object
-ordi_18S.mite <- expand.grid(x = ordi_18S.grid$x, y = ordi_18S.grid$y) #get x and ys
-ordi_18S.mite$z <- as.vector(ordi_18S.grid$z) #unravel the matrix for the z scores
-ordi_18S.mite.na <- data.frame(na.omit(ordi_18S.mite)) #gets rid of the nas
+ordi_18S_photo <- ordisurf(nmds_18S_photo_merged_2022, metadata_dist_18S_photo_merged_2022$Succession, plot = FALSE, bs="ds")
+ordi_18S_photo.grid <- ordi_18S_photo$grid #extracts the ordisurf object
+ordi_18S_photo.mite <- expand.grid(x = ordi_18S_photo.grid$x, y = ordi_18S_photo.grid$y) #get x and ys
+ordi_18S_photo.mite$z <- as.vector(ordi_18S_photo.grid$z) #unravel the matrix for the z scores
+ordi_18S_photo.mite.na <- data.frame(na.omit(ordi_18S_photo.mite)) #gets rid of the nas
 
-NMDS_18S_merged_trajectories_2022 <- scores_nmds_18S_merged_2022 %>%
+NMDS_18S_photo_merged_trajectories_2022_NI <- scores_nmds_18S_photo_merged_2022 %>%
+  filter(Flow %in% c("Natural", "Intermittent")) %>% 
   ggplot(aes(x=NMDS1, y=NMDS2)) + 
   geom_point(aes(shape = Temperature), color = "darkgray", size = 3) +
   theme_classic() +
-  stat_contour(data = ordi_18S.mite.na, aes(x = x, y = y, z = z, colour = ..level..), size = 0.75, linetype = "dashed") +
-  scale_colour_continuous(high = "black", low = "lightgray", breaks = c(10, 30, 50, 70, 90)) +
-  geom_segment(data=scores_nmds_18S_merged_2022[scores_nmds_18S_merged_2022$Treatment == "Nc",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+  geom_contour(data = ordi_18S_photo.mite.na, aes(x = x, y = y, z = z, colour=after_stat(level)), linewidth = 0.75, linetype = "dashed", color = "darkgray") +
+  geom_label_contour(data = ordi_18S_photo.mite.na, aes(x = x, y = y, z = z), skip = 0, size = 4) +
+  geom_segment(data=scores_nmds_18S_photo_merged_2022[scores_nmds_18S_photo_merged_2022$Treatment == "Nc",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
                arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#283747") +
-  geom_segment(data=scores_nmds_18S_merged_2022[scores_nmds_18S_merged_2022$Treatment == "Nw",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+  geom_segment(data=scores_nmds_18S_photo_merged_2022[scores_nmds_18S_photo_merged_2022$Treatment == "Nw",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
                arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#85929e") +
-  geom_segment(data=scores_nmds_18S_merged_2022[scores_nmds_18S_merged_2022$Treatment == "Ic",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+  geom_segment(data=scores_nmds_18S_photo_merged_2022[scores_nmds_18S_photo_merged_2022$Treatment == "Ic",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
                arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#b03a2e") +
-  geom_segment(data=scores_nmds_18S_merged_2022[scores_nmds_18S_merged_2022$Treatment == "Iw",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+  geom_segment(data=scores_nmds_18S_photo_merged_2022[scores_nmds_18S_photo_merged_2022$Treatment == "Iw",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
                arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#ec7063") +
-  geom_segment(data=scores_nmds_18S_merged_2022[scores_nmds_18S_merged_2022$Treatment == "Sc",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
-               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#1e8449") +
-  geom_segment(data=scores_nmds_18S_merged_2022[scores_nmds_18S_merged_2022$Treatment == "Sw",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
-               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#52be80") +
-  geom_segment(data=scores_nmds_18S_merged_2022[scores_nmds_18S_merged_2022$Treatment == "Cc",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
-               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#2874a6") +
-  geom_segment(data=scores_nmds_18S_merged_2022[scores_nmds_18S_merged_2022$Treatment == "Cw",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
-               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#5dade2") +
-  labs(caption="Stress 0.104") +
   labs(color = "Days of growth") +
-  ylim(-0.26,0.20) +
-  xlim(-0.4,0.5) +
+  scale_y_continuous(breaks=c(-0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3), limit=c(-0.33, 0.30)) +
+  scale_x_continuous(breaks=c(-0.2, 0.0, 0.2, 0.4), limit=c(-0.25, 0.46)) +
   theme(legend.title = element_text(size = 16, face="bold"), 
         legend.text = element_text(size = 16),
         axis.title.x = element_text(size = 16, face="bold"),
@@ -867,49 +1002,200 @@ NMDS_18S_merged_trajectories_2022 <- scores_nmds_18S_merged_2022 %>%
         plot.caption = element_text(size=14, hjust=0.95, vjust = 25),
         axis.line=element_line(),
         legend.direction= "horizontal",
-        legend.position = c(0.25, 0.075),
-        legend.background = element_rect(fill = "transparent"))+
-  guides(shape = "none", 
-         colour = guide_legend(title.position = "top",title.hjust =0.5, override.aes = list(linetype=1, linewidth =2, fill = NA)))
-NMDS_18S_merged_trajectories_2022
+        legend.position = "none",
+        legend.background = element_rect(fill = "transparent"))
+NMDS_18S_photo_merged_trajectories_2022_NI
 
-#Figure S9
-matrix_dist_18S_2022 <- as.matrix(t(data.frame(otu_table(Sentinel18S_2022_eukaryote_filt_hell))))
-metadata_dist_18S_2022 <- data.frame(sample_data(Sentinel18S_2022_eukaryote_filt_hell)) %>% rownames_to_column("Samples")
+NMDS_18S_photo_merged_trajectories_2022_NS <- scores_nmds_18S_photo_merged_2022 %>%
+  filter(Flow %in% c("Natural", "Stochastic")) %>% 
+  ggplot(aes(x=NMDS1, y=NMDS2)) + 
+  geom_point(aes(shape = Temperature), color = "darkgray", size = 3) +
+  theme_classic() +
+  geom_contour(data = ordi_18S_photo.mite.na, aes(x = x, y = y, z = z, colour=after_stat(level)), linewidth = 0.75, linetype = "dashed", color = "darkgray") +
+  geom_label_contour(data = ordi_18S_photo.mite.na, aes(x = x, y = y, z = z), skip = 0, size = 4) +
+  geom_segment(data=scores_nmds_18S_photo_merged_2022[scores_nmds_18S_photo_merged_2022$Treatment == "Nc",], aes(xend = lead(NMDS1), yend = lead(NMDS2)),
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#283747") +
+  geom_segment(data=scores_nmds_18S_photo_merged_2022[scores_nmds_18S_photo_merged_2022$Treatment == "Nw",], aes(xend = lead(NMDS1), yend = lead(NMDS2)),
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#85929e") +
+  geom_segment(data=scores_nmds_18S_photo_merged_2022[scores_nmds_18S_photo_merged_2022$Treatment == "Sc",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#1e8449") +
+  geom_segment(data=scores_nmds_18S_photo_merged_2022[scores_nmds_18S_photo_merged_2022$Treatment == "Sw",], aes(xend = lead(NMDS1), yend = lead(NMDS2)),
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#52be80") +
+  scale_y_continuous(breaks=c(-0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3), limit=c(-0.33, 0.30)) +
+  scale_x_continuous(breaks=c(-0.2, 0.0, 0.2, 0.4), limit=c(-0.25, 0.46)) +
+  theme(legend.title = element_text(size = 16, face="bold"), 
+        legend.text = element_text(size = 16),
+        axis.title.x = element_text(size = 16, face="bold"),
+        axis.title.y = element_text(size = 16, face="bold"),
+        axis.text =  element_text(size = 14),
+        strip.text = element_text(size=16, face="bold"),
+        strip.background = element_blank(),
+        plot.caption = element_text(size=14, hjust=0.95, vjust = 25),
+        axis.line=element_line(),
+        legend.direction= "horizontal",
+        legend.position = "none",
+        legend.background = element_rect(fill = "transparent"))
+NMDS_18S_photo_merged_trajectories_2022_NS
+
+NMDS_18S_photo_merged_trajectories_2022_NC <- scores_nmds_18S_photo_merged_2022 %>%
+  filter(Flow %in% c("Natural", "Constant")) %>% 
+  ggplot(aes(x=NMDS1, y=NMDS2)) + 
+  geom_point(aes(shape = Temperature), color = "darkgray", size = 3) +
+  theme_classic() +
+  geom_contour(data = ordi_18S_photo.mite.na, aes(x = x, y = y, z = z, colour=after_stat(level)), linewidth = 0.75, linetype = "dashed", color = "darkgray") +
+  geom_label_contour(data = ordi_18S_photo.mite.na, aes(x = x, y = y, z = z), skip = 0, size = 4) +
+  geom_segment(data=scores_nmds_18S_photo_merged_2022[scores_nmds_18S_photo_merged_2022$Treatment == "Nc",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#283747") +
+  geom_segment(data=scores_nmds_18S_photo_merged_2022[scores_nmds_18S_photo_merged_2022$Treatment == "Nw",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#85929e") +
+  geom_segment(data=scores_nmds_18S_photo_merged_2022[scores_nmds_18S_photo_merged_2022$Treatment == "Cc",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#2874a6") +
+  geom_segment(data=scores_nmds_18S_photo_merged_2022[scores_nmds_18S_photo_merged_2022$Treatment == "Cw",], aes(xend = lead(NMDS1), yend = lead(NMDS2)), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#5dade2") +
+  labs(caption="Stress 0.121") +
+  labs(color = "Days of growth") +
+  scale_y_continuous(breaks=c(-0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3), limit=c(-0.33, 0.30)) +
+  scale_x_continuous(breaks=c(-0.2, 0.0, 0.2, 0.4), limit=c(-0.25, 0.46)) +
+  theme(legend.title = element_text(size = 16, face="bold"), 
+        legend.text = element_text(size = 16),
+        axis.title.x = element_text(size = 16, face="bold"),
+        axis.title.y = element_text(size = 16, face="bold"),
+        axis.text =  element_text(size = 14),
+        strip.text = element_text(size=16, face="bold"),
+        strip.background = element_blank(),
+        plot.caption = element_text(size=14, hjust=1, vjust = 15),
+        axis.line=element_line(),
+        legend.direction= "horizontal",
+        legend.position = "none",
+        legend.background = element_rect(fill = "transparent"))
+NMDS_18S_photo_merged_trajectories_2022_NC
+
+
+Figure3B <- ggarrange(top_title3, NMDS_18S_photo_merged_trajectories_2022_NI + rremove("ylab") + rremove("xlab"), NMDS_18S_photo_merged_trajectories_2022_NS + rremove("ylab") + rremove("xlab"), NMDS_18S_photo_merged_trajectories_2022_NC + rremove("ylab") + rremove("xlab"), ncol = 1, nrow = 4, heights = c(0.1, 1, 1, 1))
+Figure3B  <- annotate_figure(Figure3B, left = text_grob("NMDS2", rot = 90, vjust = 1, size = 16, face = "bold"),
+                             bottom = text_grob("NMDS1", size = 16, face = "bold"))
+Figure3B
+
+#Merging Figure 3
+Figure3 <- ggarrange(Figure3A, Figure3B, ncol = 2, nrow = 1, labels = c("A", "B"), font.label = list(size = 18), common.legend = F)
+Figure3
+
+ggsave("Figure3.pdf", Figure3, width = 35,
+       height = 45,
+       units = "cm")
+
+
+#Plot NMDS of Bray-Curtis dissimilarity of non-phototrophic eukaryotes, on Hellinger-transformed merged data (Figure S11B)
+factor(sample_data(Sentinel18S_2022_others_filt_merged_hell)$Treatment, levels = c("Nc", "Nw", "Ic", "Iw", "Sc", "Sw", "Cc", "Cw"))
+
+matrix_dist_18S_others_merged_2022 <- as.matrix(t(data.frame(otu_table(Sentinel18S_2022_others_filt_merged_hell))))
+metadata_dist_18S_others_merged_2022 <- data.frame(sample_data(Sentinel18S_2022_others_filt_merged_hell)) %>% rownames_to_column("Samples")
 set.seed(19950930)
-dist_18S_2022_bray <- vegdist(matrix_dist_18S_2022, method ="bray") %>% 
+dist_18S_others_merged_2022_bray <- vegdist(matrix_dist_18S_others_merged_2022, method ="bray") %>% 
   as.matrix() %>% 
   data.frame() %>% 
   rownames_to_column("Samples")
-dist_18S_2022 <- dist_18S_2022_bray %>% 
+dist_18S_others_merged_2022 <- dist_18S_others_merged_2022_bray %>% 
   dplyr::select(all_of(.[["Samples"]])) %>% 
   as.dist()
-nmds_18S_2022 <- metaMDS(dist_18S_2022, trymax=100)
-stress_18S_all <- nmds_18S_2022$stress
-stress_18S_all
+nmds_18S_others_merged_2022 <- metaMDS(dist_18S_others_merged_2022, trymax=100)
+stress <- nmds_18S_others_merged_2022$stress
+stress
 
-scores_nmds_18S_2022 <- scores(nmds_18S_2022) %>% 
+scores_nmds_18S_others_merged_2022 <- scores(nmds_18S_others_merged_2022) %>% 
   as_tibble(rownames = "Samples") %>% 
-  inner_join(., metadata_dist_18S_2022, by="Samples")
+  inner_join(., metadata_dist_18S_others_merged_2022, by="Samples")
 
-scores_nmds_18S_2022  <- scores_nmds_18S_2022[order(scores_nmds_18S_2022$Treatment, scores_nmds_18S_2022$Time),]
+scores_nmds_18S_others_merged_2022  <- scores_nmds_18S_others_merged_2022[order(scores_nmds_18S_others_merged_2022$Treatment, scores_nmds_18S_others_merged_2022$Time),]
 
-env_18S <- data.frame(sample_data(Sentinel18S_2022_eukaryote_filt_hell)) %>% 
+ordi_18S_others <- ordisurf(nmds_18S_others_merged_2022, metadata_dist_18S_others_merged_2022$Succession, plot = FALSE, bs="ds")
+ordi_18S_others.grid <- ordi_18S_others$grid #extracts the ordisurf object
+ordi_18S_others.mite <- expand.grid(x = ordi_18S_others.grid$x, y = ordi_18S_others.grid$y) #get x and ys
+ordi_18S_others.mite$z <- as.vector(ordi_18S_others.grid$z) #unravel the matrix for the z scores
+ordi_18S_others.mite.na <- data.frame(na.omit(ordi_18S_others.mite)) #gets rid of the nas
+
+NMDS_18S_others_merged_trajectories_2022 <- scores_nmds_18S_others_merged_2022 %>%
+  ggplot(aes(x=NMDS1, y=NMDS2)) + 
+  geom_point(aes(shape = Temperature), color = "darkgray", size = 3) +
+  theme_classic() +
+  geom_contour(data = ordi_18S_others.mite.na, aes(x = x, y = y, z = z, colour=after_stat(level)), linewidth = 0.75, linetype = "dashed", color = "darkgray") +
+  geom_label_contour(data = ordi_18S_others.mite.na, aes(x = x, y = y, z = z), skip = 0, size = 4) +
+  geom_segment(data=scores_nmds_18S_others_merged_2022[scores_nmds_18S_others_merged_2022$Treatment == "Nc",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#283747") +
+  geom_segment(data=scores_nmds_18S_others_merged_2022[scores_nmds_18S_others_merged_2022$Treatment == "Nw",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#85929e") +
+  geom_segment(data=scores_nmds_18S_others_merged_2022[scores_nmds_18S_others_merged_2022$Treatment == "Ic",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#b03a2e") +
+  geom_segment(data=scores_nmds_18S_others_merged_2022[scores_nmds_18S_others_merged_2022$Treatment == "Iw",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#ec7063") +
+  geom_segment(data=scores_nmds_18S_others_merged_2022[scores_nmds_18S_others_merged_2022$Treatment == "Sc",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#1e8449") +
+  geom_segment(data=scores_nmds_18S_others_merged_2022[scores_nmds_18S_others_merged_2022$Treatment == "Sw",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#52be80") +
+  geom_segment(data=scores_nmds_18S_others_merged_2022[scores_nmds_18S_others_merged_2022$Treatment == "Cc",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#2874a6") +
+  geom_segment(data=scores_nmds_18S_others_merged_2022[scores_nmds_18S_others_merged_2022$Treatment == "Cw",], aes(xend = after_stat(lead(x)), yend = after_stat(lead(y))), 
+               arrow = arrow(length = unit(3, "mm")), linewidth = 0.75, color = "#5dade2") +
+  labs(caption="Stress 0.089") +
+  theme(legend.title = element_text(size = 16, face="bold"), 
+        legend.text = element_text(size = 16),
+        axis.title.x = element_text(size = 16, face="bold"),
+        axis.title.y = element_text(size = 16, face="bold"),
+        axis.text =  element_text(size = 14),
+        strip.text = element_text(size=16, face="bold"),
+        strip.background = element_blank(),
+        plot.caption = element_text(size=14, hjust=0.95, vjust = 25),
+        axis.line=element_line(),
+        legend.direction= "horizontal",
+        legend.position = "none",
+        legend.background = element_rect(fill = "transparent"))
+NMDS_18S_others_merged_trajectories_2022
+
+
+FigureS11 <- ggarrange(Shannon_18S_plot_others, NMDS_18S_others_merged_trajectories_2022, ncol = 1, nrow = 2, labels = c("A", "B"), font.label = list(size = 18), common.legend = F)
+FigureS11
+
+ggsave("FigureS11.pdf", FigureS11, width = 20,
+       height = 25,
+       units = "cm")
+
+#Figure S13
+matrix_dist_18S_photo_2022 <- as.matrix(t(data.frame(otu_table(Sentinel18S_2022_photo_filt_hell))))
+metadata_dist_18S_photo_2022 <- data.frame(sample_data(Sentinel18S_2022_photo_filt_hell)) %>% rownames_to_column("Samples")
+set.seed(19950930)
+dist_18S_photo_2022_bray <- vegdist(matrix_dist_18S_photo_2022, method ="bray") %>% 
+  as.matrix() %>% 
+  data.frame() %>% 
+  rownames_to_column("Samples")
+dist_18S_photo_2022 <- dist_18S_photo_2022_bray %>% 
+  dplyr::select(all_of(.[["Samples"]])) %>% 
+  as.dist()
+nmds_18S_photo_2022 <- metaMDS(dist_18S_photo_2022, trymax=100)
+stress_18S_photo_all <- nmds_18S_photo_2022$stress
+stress_18S_photo_all
+
+scores_nmds_18S_photo_2022 <- scores(nmds_18S_photo_2022) %>% 
+  as_tibble(rownames = "Samples") %>% 
+  inner_join(., metadata_dist_18S_photo_2022, by="Samples")
+
+scores_nmds_18S_photo_2022  <- scores_nmds_18S_photo_2022[order(scores_nmds_18S_photo_2022$Treatment, scores_nmds_18S_photo_2022$Time),]
+
+env_18S_photo <- data.frame(sample_data(Sentinel18S_2022_photo_filt_hell)) %>% 
   rownames_to_column("Samples") %>% 
   select(-c("Samples", "Sample", "Run", "Flow", "FlumeID", "Type", "Primers", "Temperature", "Time","Year","Treatment","NO3", "NO2", "NH4", "PO4")) %>% 
   mutate(TAD = coalesce(TAD, 0))
 set.seed(19950930)
-fit_18S <- envfit(nmds_18S_2022, env_18S, permutations = 999, na.rm = TRUE)
+fit_18S_photo <- envfit(nmds_18S_photo_2022, env_18S_photo, permutations = 999, na.rm = TRUE)
 
-fit_18S_vec <- data.frame(fit_18S$vectors$arrows * sqrt(fit_18S$vectors$r), P = fit_18S$vectors$pvals)
-fit_18S_vec$Environment <- rownames(fit_18S_vec)
-fit_18S_fac <- data.frame(fit_18S$factors$centroids * sqrt(fit_18S$factors$r), P = fit_18S$factors$pvals)
-fit_18S_fac$Environment <- rownames(fit_18S_fac) 
-fit_18S_fac <- fit_18S_fac %>% slice(2L) %>% mutate(Environment = "Drought")
-fit_18S_env <- rbind(fit_18S_vec,fit_18S_fac)
-fit_18S_env_pv <- subset(fit_18S_env, P<=0.05)
+fit_18S_photo_vec <- data.frame(fit_18S_photo$vectors$arrows * sqrt(fit_18S_photo$vectors$r), P = fit_18S_photo$vectors$pvals)
+fit_18S_photo_vec$Environment <- rownames(fit_18S_photo_vec)
+fit_18S_photo_fac <- data.frame(fit_18S_photo$factors$centroids * sqrt(fit_18S_photo$factors$r), P = fit_18S_photo$factors$pvals)
+fit_18S_photo_fac$Environment <- rownames(fit_18S_photo_fac) 
+fit_18S_photo_fac <- fit_18S_photo_fac %>% slice(2L) %>% mutate(Environment = "Drought")
+fit_18S_photo_env <- rbind(fit_18S_photo_vec,fit_18S_photo_fac)
+fit_18S_photo_env_pv <- subset(fit_18S_photo_env, P<=0.05)
 
-fit_18S_env_pv_star <- fit_18S_env_pv %>%
+fit_18S_photo_env_pv_star <- fit_18S_photo_env_pv %>%
   group_by(Environment) %>%
   mutate(EnvironmentSign = case_when(
     Environment == "O2" ~ "O[2]*\"*\"",
@@ -920,14 +1206,14 @@ fit_18S_env_pv_star <- fit_18S_env_pv %>%
   )) %>%
   mutate(EnvironmentSign = as.character(EnvironmentSign))
 
-NMDS_18S_merged_2022 <- ggplot(scores_nmds_18S_2022 , aes(x=NMDS1, y=NMDS2)) +
+NMDS_18S_photo_2022 <- ggplot(scores_nmds_18S_photo_2022 , aes(x=NMDS1, y=NMDS2)) +
   geom_point(aes(NMDS1, NMDS2, colour = Succession, shape = Flow), size = 2, alpha = 0.8) +
   scale_color_viridis(discrete=FALSE, option="magma", breaks= c(0, 20, 40, 60, 80, 100)) +
   theme_classic() +
   guides(colour = guide_colourbar(barheight = 10)) +
-  labs(color="Days of growth", caption="Stress 0.122") +
-  scale_x_continuous(limits=c(-0.3,0.2)) +
-  scale_y_continuous(limits=c(-0.2,0.2)) +
+  labs(color="Days of growth", caption="Stress 0.144") +
+  scale_x_continuous(limits=c(-0.2,0.3)) +
+  scale_y_continuous(limits=c(-0.25,0.2)) +
   theme(legend.title = element_text(size = 16, face="bold"), 
         legend.text = element_text(size = 16), 
         axis.title.y = element_text(size=16, face="bold"), 
@@ -937,26 +1223,86 @@ NMDS_18S_merged_2022 <- ggplot(scores_nmds_18S_2022 , aes(x=NMDS1, y=NMDS2)) +
         plot.caption = element_text(size=16, hjust=1, vjust = 20),
         strip.text = element_text(size=16, face="bold"),
         axis.line=element_line()) +
-  geom_segment(data = fit_18S_env_pv_star, aes(x = 0, xend=NMDS1*0.3, y=0, yend=NMDS2*0.3), arrow=arrow(length=unit(0.2, "cm")), colour = "darkgrey", lwd=0.5) +
-  ggrepel::geom_text_repel(data = fit_18S_env_pv_star, aes(x=NMDS1*0.3, y=NMDS2*0.3, label = EnvironmentSign), parse = TRUE, cex = 5, direction = "x", colour = "black", segment.size = 0.25, 
-                           nudge_x = c(-0.01, -0.05,      0, -0.005, -0.005,    0,     0,  0.005, -0.01, 0, -0.01, -0.01, -0.005, -0.01,  -0.010, -0.01, -0.010,  -0.01,     0, -0.01, -0.015, -0.020, -0.020, -0.005, 0.05),
-                           nudge_y = c(    0,  0.10, -0.005, -0.005, -0.005, 0.02, 0.005, -0.001, -0.02, 0,     0,     0, -0.010,     0,   0.002,  0.0,  0.005,      0,  0.06,      0, -0.004, -0.015, -0.015,      0, 0.03))
-NMDS_18S_merged_2022
-ggsave("FigureS9.pdf", NMDS_18S_merged_2022, width = 40,
+  geom_segment(data = fit_18S_photo_env_pv_star, aes(x = 0, xend=NMDS1*0.3, y=0, yend=NMDS2*0.3), arrow=arrow(length=unit(0.2, "cm")), colour = "darkgrey", lwd=0.5) +
+  ggrepel::geom_text_repel(data = fit_18S_photo_env_pv_star, aes(x=NMDS1*0.3, y=NMDS2*0.3, label = EnvironmentSign), parse = TRUE, cex = 5, direction = "x", colour = "black", segment.size = 0.25)
+NMDS_18S_photo_2022
+
+ggsave("FigureS13.pdf", NMDS_18S_photo_2022, width = 40,
        height = 35,
        units = "cm")
 
-#Merging Figure 3
-Figure3_legend <- ggarrange(NMDS_16S_merged_trajectories_2022, NMDS_18S_merged_trajectories_2022, ncol = 2, nrow = 1, labels = c("A", "B"), font.label = list(size = 18), common.legend = T, legend = "bottom")
-Figure3 <- ggarrange(top_title2, top_title3, NMDS_16S_merged_trajectories_2022 + theme(legend.position = "none"), NMDS_18S_merged_trajectories_2022+ theme(legend.position = "none"), ncol = 2, nrow = 2, labels = c("", "", "A", "B"), font.label = list(size = 18), common.legend = F, heights = c(0.05, 1))
-Figure3
+#Figure S14
+matrix_dist_18S_others_2022 <- as.matrix(t(data.frame(otu_table(Sentinel18S_2022_others_filt_hell))))
+metadata_dist_18S_others_2022 <- data.frame(sample_data(Sentinel18S_2022_others_filt_hell)) %>% rownames_to_column("Samples")
+set.seed(19950930)
+dist_18S_others_2022_bray <- vegdist(matrix_dist_18S_others_2022, method ="bray") %>% 
+  as.matrix() %>% 
+  data.frame() %>% 
+  rownames_to_column("Samples")
+dist_18S_others_2022 <- dist_18S_others_2022_bray %>% 
+  dplyr::select(all_of(.[["Samples"]])) %>% 
+  as.dist()
+nmds_18S_others_2022 <- metaMDS(dist_18S_others_2022, trymax=100)
+stress_18S_others_all <- nmds_18S_others_2022$stress
+stress_18S_others_all
 
-ggsave("Figure3_legend.pdf", Figure3_legend, width = 40,
-       height = 20,
+scores_nmds_18S_others_2022 <- scores(nmds_18S_others_2022) %>% 
+  as_tibble(rownames = "Samples") %>% 
+  inner_join(., metadata_dist_18S_others_2022, by="Samples")
+
+scores_nmds_18S_others_2022  <- scores_nmds_18S_others_2022[order(scores_nmds_18S_others_2022$Treatment, scores_nmds_18S_others_2022$Time),]
+
+env_18S_others <- data.frame(sample_data(Sentinel18S_2022_others_filt_hell)) %>% 
+  rownames_to_column("Samples") %>% 
+  select(-c("Samples", "Sample", "Run", "Flow", "FlumeID", "Type", "Primers", "Temperature", "Time","Year","Treatment","NO3", "NO2", "NH4", "PO4")) %>% 
+  mutate(TAD = coalesce(TAD, 0))
+set.seed(19950930)
+fit_18S_others <- envfit(nmds_18S_others_2022, env_18S_others, permutations = 999, na.rm = TRUE)
+
+fit_18S_others_vec <- data.frame(fit_18S_others$vectors$arrows * sqrt(fit_18S_others$vectors$r), P = fit_18S_others$vectors$pvals)
+fit_18S_others_vec$Environment <- rownames(fit_18S_others_vec)
+fit_18S_others_fac <- data.frame(fit_18S_others$factors$centroids * sqrt(fit_18S_others$factors$r), P = fit_18S_others$factors$pvals)
+fit_18S_others_fac$Environment <- rownames(fit_18S_others_fac) 
+fit_18S_others_fac <- fit_18S_others_fac %>% slice(2L) %>% mutate(Environment = "Drought")
+fit_18S_others_env <- rbind(fit_18S_others_vec,fit_18S_photo_fac)
+fit_18S_others_env_pv <- subset(fit_18S_others_env, P<=0.05)
+
+fit_18S_others_env_pv_star <- fit_18S_others_env_pv %>%
+  group_by(Environment) %>%
+  mutate(EnvironmentSign = case_when(
+    Environment == "O2" ~ "O[2]*\"*\"",
+    Environment %in% c("C25", "Temp", "Turbidity", "Fluoride", "Chloride", "Nitrite", "Bromide",
+                       "Sulfate", "Sodium", "Magnesium", "Potassium", "Calcium",
+                       "Strontium") ~ paste0("\"", Environment, "*\""),
+    TRUE ~ paste0("\"", Environment, "\"")
+  )) %>%
+  mutate(EnvironmentSign = as.character(EnvironmentSign))
+
+NMDS_18S_others_2022 <- ggplot(scores_nmds_18S_others_2022 , aes(x=NMDS1, y=NMDS2)) +
+  geom_point(aes(NMDS1, NMDS2, colour = Succession, shape = Flow), size = 2, alpha = 0.8) +
+  scale_color_viridis(discrete=FALSE, option="mako", breaks= c(0, 20, 40, 60, 80, 100)) +
+  theme_classic() +
+  guides(colour = guide_colourbar(barheight = 10)) +
+  labs(color="Days of growth", caption="Stress 0.115") +
+  scale_x_continuous(limits=c(-0.4,0.5)) +
+  scale_y_continuous(limits=c(-0.2,0.3)) +
+  theme(legend.title = element_text(size = 16, face="bold"), 
+        legend.text = element_text(size = 16), 
+        axis.title.y = element_text(size=16, face="bold"), 
+        axis.title.x = element_text(size=16, face="bold"),
+        axis.text =  element_text(size = 12),
+        strip.background = element_blank(),
+        plot.caption = element_text(size=16, hjust=1, vjust = 20),
+        strip.text = element_text(size=16, face="bold"),
+        axis.line=element_line()) +
+  geom_segment(data = fit_18S_others_env_pv_star, aes(x = 0, xend=NMDS1*0.3, y=0, yend=NMDS2*0.3), arrow=arrow(length=unit(0.2, "cm")), colour = "darkgrey", lwd=0.5) +
+  ggrepel::geom_text_repel(data = fit_18S_others_env_pv_star, aes(x=NMDS1*0.3, y=NMDS2*0.3, label = EnvironmentSign), parse = TRUE, cex = 5, direction = "x", colour = "black", segment.size = 0.25)
+NMDS_18S_others_2022
+
+ggsave("FigureS14.pdf", NMDS_18S_others_2022, width = 40,
+       height = 35,
        units = "cm")
-ggsave("Figure3.pdf", Figure3, width = 40,
-       height = 20,
-       units = "cm")
+
 
 
 ### Statistics on patterns of succession ------------------------------------
@@ -971,16 +1317,18 @@ shapiro.test(metadata_16S$BA) #Not normal
 kruskal.test(BA ~ Succession, data = metadata_16S) #Yes 
 kruskal.test(BA ~ Flow, data = metadata_16S) #No
 kruskal.test(BA ~ Temperature, data = metadata_16S) #No
+kruskal.test(BA ~ Treatment, data = metadata_16S) #No interaction
 
 ##16S alpha diversity
 shapiro.test(alphadiv_16S_df$Shannon) #Not normal
 kruskal.test(Shannon ~ Succession, data = alphadiv_16S_df) #Yes
 kruskal.test(Shannon ~ Flow, data = alphadiv_16S_df) #No
 kruskal.test(Shannon ~ Temperature, data = alphadiv_16S_df) #No
+kruskal.test(Shannon ~ Treatment, data = alphadiv_16S_df) #No interaction
 
 ##16S beta diversity
-adonis_bc_16S <- adonis2(matrix_dist_16S_2022 ~ Succession+Temperature+Flow, data=metadata_dist_16S_2022, permutations=999, strata=metadata_dist_16S_2022$FlumeID, method="bray") #Succession, Flow and Temperature are significant 
-adonis_bc_16S
+adonis_bc_16S <- adonis2(matrix_dist_16S_2022 ~ Succession+Temperature+Flow+Treatment, data=metadata_dist_16S_2022, permutations=999, strata=metadata_dist_16S_2022$FlumeID, method="bray")
+adonis_bc_16S #Succession, Flow, Temperature and Treatment are significant 
 set.seed(19950930)
 pairwise.adonis_16S <- pairwise.adonis(matrix_dist_16S_2022, metadata_dist_16S_2022$Treatment, sim.function='vegdist', sim.method='bray',p.adjust.m='BH', perm = 999)
 pairwise.adonis_16S
@@ -1005,45 +1353,80 @@ disp_16S_Treatment <- betadisper(dist_16S, metadata_dist_16S_2022$Treatment, typ
 anov_disp_16S_Treatment <- anova(disp_16S_Treatment)
 anov_disp_16S_Treatment #Not significant, so homogeneity of dispersion is assumed. I can trust adonis.
 
+###Phototrophs
 ##ChlA
-shapiro.test(metadata_18S$ChlA) #Not normal
-kruskal.test(ChlA ~ Succession, data = metadata_18S) #Yes 
-kruskal.test(ChlA ~ Flow, data = metadata_18S) #Yes
-kruskal.test(ChlA ~ Temperature, data = metadata_18S) #Yes
+shapiro.test(metadata_18S_photo$ChlA) #Not normal
+kruskal.test(ChlA ~ Succession, data = metadata_18S_photo) #Yes 
+kruskal.test(ChlA ~ Flow, data = metadata_18S_photo) #Yes
+kruskal.test(ChlA ~ Temperature, data = metadata_18S_photo) #Yes
+kruskal.test(ChlA ~ Treatment, data = metadata_18S_photo)
 
 #Which group are different (p < 0.05)?
-wilcox_observed_ChlA_Flow <- pairwise.wilcox.test(metadata_18S$ChlA, metadata_18S$Flow, p.adjust.method = "BH")
+wilcox_observed_ChlA_Flow <- pairwise.wilcox.test(metadata_18S_photo$ChlA, metadata_18S_photo$Treatment, p.adjust.method = "BH")
 wilcox_observed_ChlA_Flow #Natural vs Intermittent
 
 ##18S alpha diversity
-shapiro.test(alphadiv_18S_df$Shannon) #Not normal
-kruskal.test(Shannon ~ Succession, data = alphadiv_18S_df) #Yes
-kruskal.test(Shannon ~ Flow, data = alphadiv_18S_df) #No
-kruskal.test(Shannon ~ Temperature, data = alphadiv_18S_df) #No
+shapiro.test(alphadiv_18S_df_photo$Shannon) #Not normal
+kruskal.test(Shannon ~ Succession, data = alphadiv_18S_df_photo) #Yes
+kruskal.test(Shannon ~ Flow, data = alphadiv_18S_df_photo) #No
+kruskal.test(Shannon ~ Temperature, data = alphadiv_18S_df_photo) #No
+kruskal.test(Shannon ~ Treatment, data = alphadiv_18S_df_photo) #No interaction
 
 ##18S beta diversity
-adonis_bc_18S <- adonis2(matrix_dist_18S_2022 ~ Succession+Temperature+Flow, data=metadata_dist_18S_2022, permutations=999, strata=metadata_dist_18S_2022$FlumeID, method="bray") #Succession, Flow and Temperature are significant 
-adonis_bc_18S
+adonis_bc_18S_photo <- adonis2(matrix_dist_18S_photo_2022 ~ Succession+Temperature+Flow+Treatment, data=metadata_dist_18S_photo_2022, permutations=999, strata=metadata_dist_18S_photo_2022$FlumeID, method="bray")
+adonis_bc_18S_photo #Succession, Flow, Temperature and Treatment are significant 
 set.seed(19950930)
-pairwise.adonis_18S <- pairwise.adonis(matrix_dist_18S_2022, metadata_dist_18S_2022$Treatment, sim.function='vegdist', sim.method='bray',p.adjust.m='BH', perm = 999)
-pairwise.adonis_18S
+pairwise.adonis_18S_photo <- pairwise.adonis(matrix_dist_18S_photo_2022, metadata_dist_18S_photo_2022$Treatment, sim.function='vegdist', sim.method='bray',p.adjust.m='BH', perm = 999)
+pairwise.adonis_18S_photo
 
 ##Betadisper
-dist_18S <- vegdist(matrix_dist_18S_2022, method ="bray")
+dist_18S_photo <- vegdist(matrix_dist_18S_photo_2022, method ="bray")
 #Succession
-disp_18S_Succession <- betadisper(dist_18S, metadata_dist_18S_2022$Succession, type=c("centroid"))
-anov_disp_18S_Succession <- anova(disp_18S_Succession)
-anov_disp_18S_Succession #Significant, so homogeneity of dispersion is not assumed. Should I trust adonis?
+disp_18S_photo_Succession <- betadisper(dist_18S_photo, metadata_dist_18S_photo_2022$Succession, type=c("centroid"))
+anov_disp_18S_photo_Succession <- anova(disp_18S_photo_Succession)
+anov_disp_18S_photo_Succession #Significant, so homogeneity of dispersion is not assumed. Should I trust adonis?
 #Flow
-disp_18S_Flow <- betadisper(dist_18S, metadata_dist_18S_2022$Flow, type=c("centroid"))
-anov_disp_18S_Flow <- anova(disp_18S_Flow)
-anov_disp_18S_Flow #Not significant, so homogeneity of dispersion is assumed. I can trust adonis.
+disp_18S_photo_Flow <- betadisper(dist_18S_photo, metadata_dist_18S_photo_2022$Flow, type=c("centroid"))
+anov_disp_18S_photo_Flow <- anova(disp_18S_photo_Flow)
+anov_disp_18S_photo_Flow #Not significant, so homogeneity of dispersion is assumed. I can trust adonis.
 #Temperature
-disp_18S_Temperature <- betadisper(dist_18S, metadata_dist_18S_2022$Temperature, type=c("centroid"))
-anov_disp_18S_Temperature <- anova(disp_18S_Temperature)
-anov_disp_18S_Temperature #Significant, so homogeneity of dispersion is not assumed. Should I trust adonis?
+disp_18S_photo_Temperature <- betadisper(dist_18S_photo, metadata_dist_18S_photo_2022$Temperature, type=c("centroid"))
+anov_disp_18S_photo_Temperature <- anova(disp_18S_photo_Temperature)
+anov_disp_18S_photo_Temperature #Significant, so homogeneity of dispersion is not assumed. Should I trust adonis?
 
 
+###Non-phototrophs
+
+##18S alpha diversity
+shapiro.test(alphadiv_18S_df_others$Shannon) #Not normal
+kruskal.test(Shannon ~ Succession, data = alphadiv_18S_df_others) #Yes
+kruskal.test(Shannon ~ Flow, data = alphadiv_18S_df_others) #No
+kruskal.test(Shannon ~ Temperature, data = alphadiv_18S_df_others) #No
+kruskal.test(Shannon ~ Treatment, data = alphadiv_18S_df_others) #No interactions
+
+##18S beta diversity
+adonis_bc_18S_others <- adonis2(matrix_dist_18S_others_2022 ~ Succession+Temperature+Flow+Treatment, data=metadata_dist_18S_others_2022, permutations=999, strata=metadata_dist_18S_others_2022$FlumeID, method="bray")
+adonis_bc_18S_others #Succession, Flow, Temperature and Treatment are significant 
+set.seed(19950930)
+pairwise.adonis_18S_others <- pairwise.adonis(matrix_dist_18S_others_2022, metadata_dist_18S_others_2022$Treatment, sim.function='vegdist', sim.method='bray',p.adjust.m='BH', perm = 999)
+pairwise.adonis_18S_others
+
+##Betadisper
+dist_18S_others <- vegdist(matrix_dist_18S_others_2022, method ="bray")
+#Succession
+disp_18S_others_Succession <- betadisper(dist_18S_others, metadata_dist_18S_others_2022$Succession, type=c("centroid"))
+anov_disp_18S_others_Succession <- anova(disp_18S_others_Succession)
+anov_disp_18S_others_Succession #Significant, so homogeneity of dispersion is not assumed. Should I trust adonis?
+#Flow
+disp_18S_others_Flow <- betadisper(dist_18S_others, metadata_dist_18S_others_2022$Flow, type=c("centroid"))
+anov_disp_18S_others_Flow <- anova(disp_18S_others_Flow)
+anov_disp_18S_others_Flow #Not significant, so homogeneity of dispersion is assumed. I can trust adonis.
+#Temperature
+disp_18S_others_Temperature <- betadisper(dist_18S_others, metadata_dist_18S_others_2022$Temperature, type=c("centroid"))
+anov_disp_18S_others_Temperature <- anova(disp_18S_others_Temperature)
+anov_disp_18S_others_Temperature #Not significant, so homogeneity of dispersion is assumed. I can trust adonis.
+
+  
 ### Differential abundance --------------------------------------------------
 library(ANCOMBC)
 library(DT)
@@ -1374,7 +1757,7 @@ Sentinel18S_2022_eukaryote_filt_class_flowinwarm <- ps_filter(Sentinel18S_2022_e
 set.seed(19950930)
 TSE_eukaryote_2022_class_flowincontrol <- mia::makeTreeSummarizedExperimentFromPhyloseq(Sentinel18S_2022_eukaryote_filt_class_flowincontrol)
 TSE_eukaryote_2022_class_flowincontrol$Flow <- factor(TSE_eukaryote_2022_class_flowincontrol$Flow, levels = c("Natural", "Intermittent", "Stochastic", "Constant"))
-TSE_eukaryote_2022_class_flowincontrol$FlumeID <- factor(TSE_eukaryote_2022_class_flowincontrol$FlumeID, levels = c("1", "2", "3", "4", "5", "6","7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24"))
+TSE_eukaryote_2022_class_flowincontrol$FlumeID <- factor(TSE_eukaryote_2022_class_flowincontrol$FlumeID, levels = c("1", "2", "3", "4", "5", "6","7", "8", "9", "10", "11", "12"))
 
 TSE_eukaryote_2022_class_flowinwarm <- mia::makeTreeSummarizedExperimentFromPhyloseq(Sentinel18S_2022_eukaryote_filt_class_flowinwarm)
 TSE_eukaryote_2022_class_flowinwarm$Flow <- factor(TSE_eukaryote_2022_class_flowinwarm$Flow, levels = c("Natural", "Intermittent", "Stochastic", "Constant"))
@@ -1648,6 +2031,192 @@ ggsave("Figure5.pdf", Figure5, width = 35,
        units = "cm")
 
 
+#Figure S15
+drought_tolerant <- c("Deinococcus", "Nocardioides", "Massilia", "Peredibacter",
+                      "Hymenobacter", "Cavicella", "Thermomonas", "Sphingomonas",
+                      "Parablastomonas")
+
+Genus_16S_drought <- Sentinel16S_2022_bacteria_filt %>% 
+  ps_filter(Flow == "Intermittent" | Flow == "Natural") %>% 
+  tax_glom(taxrank = "Genus") %>% 
+  transform_sample_counts(function(x) x / sum(x))
+
+Genus_16S_drought2 <- subset_taxa(Genus_16S_drought, Genus %in% drought_tolerant) %>% ps_melt()
+Genus_16S_drought2$Time <- as.factor(Genus_16S_drought2$Time) 
+Genus_16S_drought3 <- Genus_16S_drought2 %>% 
+  select(Sample, sample_Sample, Time, Succession, Abundance, Flow, Genus) %>% 
+  group_by(Flow, Time, Genus) %>%
+  mutate(Ab_mean = mean(Abundance)+0.00001) %>% 
+  ungroup() %>% 
+  group_by(Flow, Genus) %>% 
+  mutate(Ab_norm = Ab_mean / Ab_mean[Time == "1"],
+         Ab_norm = replace_na(Ab_norm, 0),
+         Ab_log = log(Ab_norm))
+
+Plottestdrought <- ggplot(Genus_16S_drought3, aes(x = Succession, y = Ab_norm)) +
+  geom_line(aes(color = Genus),linewidth = 1.25, se = FALSE, span = 0.5, lineend = "round") +
+  scale_color_viridis(discrete=TRUE) +
+  theme_classic() +
+  labs(x = "Days of growth", y = "Relative fold increase", color = "Differentially more\nabundant genera") +
+  facet_grid(cols = vars(factor(Flow, levels = c("Natural", "Intermittent")))) +
+  geom_vline(xintercept = c(24, 38, 87), linetype="dashed", 
+             color = "#b03a2e", size=1) +
+  theme(legend.title = element_text(size = 16, face="bold"), 
+        legend.text = element_text(size = 16),
+        axis.title.x = element_text(size = 16, face="bold"),
+        axis.title.y = element_text(size = 16, face="bold"),
+        axis.text.x =  element_text(size = 14), 
+        axis.text.y =  element_text(size = 14, angle=90, hjust = 0.5),
+        strip.background = element_blank(),
+        strip.text = element_text(size=16, face="bold"),
+        legend.position = "right")
+Plottestdrought
+
+ggsave("FigureS15.pdf", Plottestdrought, width = 30,
+       height = 15,
+       units = "cm")
+
+### Community assembly ------------------------------------------------------
+
+BMNTD <- read.csv("BMNTD.csv",sep=",")
+
+BMNTD_long <- BMNTD %>% 
+  select(-Flume, -Temperature, -Flow) %>% 
+  melt(variable.name = "Process", value.name = "Contribution") %>% 
+  mutate(Contribution = Contribution*100,
+         Process = factor(Process, levels=c("DL", "DR", "HD", "HeS", "HoS")),
+         Treatment = factor(Treatment, levels=c("Nc","Nw", "Ic", "Iw", "Sc", "Sw", "Cc", "Cw")))
+
+# Calculate average and sd
+mean(BMNTD$DR,na.rm = TRUE)
+sd(BMNTD$DR,na.rm = TRUE)
+mean(BMNTD$HoS,na.rm = TRUE)
+sd(BMNTD$HoS,na.rm = TRUE)
+mean(BMNTD$DL,na.rm = TRUE)
+sd(BMNTD$DL,na.rm = TRUE)
+mean(BMNTD$HD,na.rm = TRUE)
+sd(BMNTD$HD,na.rm = TRUE)
+mean(BMNTD$HeS,na.rm = TRUE)
+sd(BMNTD$HeS,na.rm = TRUE)
+
+plot_BMNTD_overall <- BMNTD_long %>% ggplot(aes(x = Process, y = Contribution)) +
+  geom_boxplot(fill = "lightgray") +
+  ylab("Contribution (%)") +
+  xlab("Assembly processes") +
+  labs(color = "Flow regimes") +
+  scale_x_discrete(labels=c("DL" = "Dispersal\nlimitation", "DR" = "Drift", "HD" = "Homogenizing\ndispersal","HeS" = "heterogeneous\nselection", "HoS" = "Homogeneous\nselection")) +
+  theme_classic() +
+  theme(legend.title = element_text(size = 16, face="bold"),
+        legend.text = element_text(size = 16), 
+        axis.title.y = element_text(size=16, face="bold"), 
+        axis.title.x = element_text(size=16, face="bold"),
+        axis.text = element_text(size = 14),
+        strip.background = element_blank(),
+        axis.line=element_line(),
+        legend.position = "right",
+        legend.justification = "left")+
+  stat_summary(fun.y=median, geom="point", shape=5, size=3, color="black", fill="black") 
+plot_BMNTD_overall
+
+#Differences between treatments?
+library(multcompView)
+
+DR <- BMNTD_long %>% filter(Process == "DR")
+DR.aov <- aov(Contribution ~ Treatment, data = DR)
+summary(DR.aov) #There is a significant difference
+shapiro.test(residuals(DR.aov)) #Normality can be assume
+tukey_DR <- TukeyHSD(DR.aov)
+letters_DR <- multcompLetters4(DR.aov, TukeyHSD(DR.aov), threshold = 0.05)
+letters_DR_df <- data.frame(Treatment = names(letters_DR$Treatment$Letters), Signif = letters_DR$Treatment$Letters, row.names = NULL) %>% mutate(Process = "DR")
+
+DL <- BMNTD_long %>% filter(Process == "DL")
+DL.aov <- aov(Contribution ~ Treatment, data = DL)
+summary(DL.aov) #There is a significant difference
+shapiro.test(residuals(DL.aov)) #Normality can be assume
+tukey_DL <- TukeyHSD(DL.aov)
+letters_DL <- multcompLetters4(DL.aov, TukeyHSD(DL.aov), threshold = 0.05, reversed = TRUE)
+letters_DL_df <- data.frame(Treatment = names(letters_DL$Treatment$Letters), Signif = letters_HD$Treatment$Letters, row.names = NULL) %>% mutate(Process = "DL")
+
+HD <- BMNTD_long %>% filter(Process == "HD")
+HD.aov <- aov(Contribution ~ Treatment, data = HD)
+summary(HD.aov) #There is a significant difference
+shapiro.test(residuals(HD.aov)) #Normality can be assume
+tukey_HD <- TukeyHSD(HD.aov)
+letters_HD <- multcompLetters4(HD.aov, TukeyHSD(HD.aov), threshold = 0.05, reversed = TRUE)
+letters_HD_df <- data.frame(Treatment = names(letters_HD$Treatment$Letters), Signif = letters_HD$Treatment$Letters, row.names = NULL) %>% mutate(Process = "HD")
+
+HoS <- BMNTD_long %>% filter(Process == "HoS")
+HoS.aov <- aov(Contribution ~ Treatment, data = HoS)
+summary(HoS.aov) #There is a significant difference
+shapiro.test(residuals(HoS.aov)) #Normality can be assume
+tukey_HoS <- TukeyHSD(HoS.aov)
+letters_HoS <- multcompLetters4(HoS.aov, TukeyHSD(HoS.aov), threshold = 0.05, reversed = TRUE)
+letters_HoS_df <- data.frame(Treatment = names(letters_HoS$Treatment$Letters), Signif = letters_HoS$Treatment$Letters, row.names = NULL) %>% mutate(Process = "HoS")
+
+Treatment_sign <- rbind(letters_DL_df, letters_DR_df, letters_HD_df, letters_HoS_df)
+
+BMNTD_long <- BMNTD_long %>%
+  left_join(Treatment_sign %>% select(Treatment, Process, Signif), 
+            by = c("Treatment", "Process"))
+
+summary_sign <- BMNTD_long %>%
+  filter(Process != "HeS") %>%
+  group_by(Treatment, Process) %>%
+  summarize(Max_Contribution = max(Contribution, na.rm = TRUE),
+            Signif = (Signif),
+            .groups = 'drop') %>% 
+  distinct() %>% 
+  mutate(Treatment = factor(Treatment, levels=c("Nc","Nw", "Ic", "Iw", "Sc", "Sw", "Cc", "Cw")))
+
+Process_labels = as_labeller(c("DL" = "Dispersal limitation",
+                               "DR" = "Drift", 
+                               "HD" = "Homogenizing dispersal",
+                               "HoS" = "Homogeneous selection"))
+
+plot_BMNTD_treatment <- BMNTD_long %>% 
+  filter(Process != "HeS") %>% 
+  ggplot(aes(x = Treatment, y = Contribution, fill = Treatment)) +
+  geom_boxplot() +
+  scale_fill_manual(values = c("#283747","#85929e","#b03a2e","#ec7063","#1e8449","#52be80","#2874a6","#5dade2"),
+                    labels= c(bquote("N"[flow]*"C"[temp]), bquote("N"[flow]*"W"[temp]), bquote("I"[flow]*"C"[temp]), bquote("I"[flow]*"W"[temp]), bquote("S"[flow]*"C"[temp]), bquote("S"[flow]*"W"[temp]), bquote("C"[flow]*"C"[temp]), bquote("C"[flow]*"W"[temp]))) +
+  ylab("Contribution (%)") +
+  labs(color = "Flow regimes") +
+  theme_classic() +
+  theme(legend.title = element_text(size = 16, face="bold"),
+        legend.text = element_text(size = 16), 
+        axis.title.y = element_text(size=16, face="bold"), 
+        axis.title.x = element_text(size=16, face="bold", vjust = -5),
+        axis.text.y = element_text(size = 14),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        strip.background = element_blank(),
+        axis.line=element_line(),
+        legend.position = "right",
+        legend.justification = "left",
+        strip.text = element_text(size = 14, face = "bold"),
+        plot.margin = margin(0, 0, 1, 0, "cm")) +
+  facet_wrap(~Process, scales = "free", labeller = Process_labels) +
+  stat_summary(fun = median, geom = "point", shape = 5, size = 3, color = "black") +
+  geom_text(data = summary_sign, aes(x = Treatment, y = Max_Contribution, label = Signif), 
+            vjust = -0.2, size = 5, color = "black")
+plot_BMNTD_treatment
+
+meanDR_Nc <- BMNTD_long %>% filter(Treatment == "Nc" & Process == "DR")
+mean(meanDR_Nc$Contribution)
+sd(meanDR_Nc$Contribution)
+meanDR_others <- BMNTD_long %>% filter(Treatment != "Nc" & Process == "DR")
+mean(meanDR_others$Contribution)
+sd(meanDR_others$Contribution)
+
+Figure6 <- ggarrange(plot_BMNTD_overall, plot_BMNTD_treatment, ncol = 2, nrow = 1, labels = c("A", "B"), font.label = list(size = 18), align = "h", common.legend = F, legend ="right")
+Figure6 <- plot_grid(plot_BMNTD_overall, plot_BMNTD_treatment, ncol = 2, nrow = 1, align = "h", axis = "bt", labels = c("A", "B"), font.label = list(size = 18))
+Figure6
+
+ggsave("Figure6.pdf", Figure6, width = 45,
+       height = 25,
+       units = "cm")
+
+
 ### Functional metabolic diversity ------------------------------------------
 
 ##Correlation biolog vs treatment
@@ -1709,7 +2278,7 @@ test <- Biolog %>%
 
 
 
-Figure6a <- Biolog %>% mutate(Treatment = factor(Treatment, levels=c("Nc","Nw", "Ic", "Iw", "Sc", "Sw", "Cc", "Cw"))) %>% 
+Figure7a <- Biolog %>% mutate(Treatment = factor(Treatment, levels=c("Nc","Nw", "Ic", "Iw", "Sc", "Sw", "Cc", "Cw"))) %>% 
   ggplot(aes(x=Temperature,y=R,fill=Treatment)) + 
   scale_fill_manual(values = c("#283747","#85929e","#b03a2e","#ec7063","#1e8449","#52be80","#2874a6","#5dade2"),
                     labels= c(bquote("N"[flow]*"C"[temp]), bquote("N"[flow]*"W"[temp]), bquote("I"[flow]*"C"[temp]), bquote("I"[flow]*"W"[temp]), bquote("S"[flow]*"C"[temp]), bquote("S"[flow]*"W"[temp]), bquote("C"[flow]*"C"[temp]), bquote("C"[flow]*"W"[temp]))) +
@@ -1726,9 +2295,9 @@ Figure6a <- Biolog %>% mutate(Treatment = factor(Treatment, levels=c("Nc","Nw", 
         plot.margin = margin(1, 0, 0, 0, "cm")) +
   stat_summary(fun.y=median, geom="point", shape=5, size=3, color="black", fill="black") +
   geom_signif(comparisons = list(c("control", "warm")), map_signif_level=TRUE, textsize=7, col = 1)
-Figure8a
+Figure7a
   
-Figure6b <- Biolog %>% mutate(Treatment = factor(Treatment, levels=c("Nc","Nw", "Ic", "Iw", "Sc", "Sw", "Cc", "Cw"))) %>% 
+Figure7b <- Biolog %>% mutate(Treatment = factor(Treatment, levels=c("Nc","Nw", "Ic", "Iw", "Sc", "Sw", "Cc", "Cw"))) %>% 
   ggplot(aes(x=Temperature,y=H,fill=Treatment)) + 
   scale_fill_manual(values = c("#283747","#85929e","#b03a2e","#ec7063","#1e8449","#52be80","#2874a6","#5dade2"),
                     labels= c(bquote("N"[flow]*"C"[temp]), bquote("N"[flow]*"W"[temp]), bquote("I"[flow]*"C"[temp]), bquote("I"[flow]*"W"[temp]), bquote("S"[flow]*"C"[temp]), bquote("S"[flow]*"W"[temp]), bquote("C"[flow]*"C"[temp]), bquote("C"[flow]*"W"[temp]))) +
@@ -1744,11 +2313,11 @@ Figure6b <- Biolog %>% mutate(Treatment = factor(Treatment, levels=c("Nc","Nw", 
         plot.margin = margin(1, 0, 0, 0, "cm")) +
   stat_summary(fun.y=median, geom="point", shape=5, size=3, color="black", fill="black") +
   geom_signif(test="wilcox.test", comparisons = list(c("control", "warm")), map_signif_level=TRUE, textsize=7, col = 1)
-Figure6b
+Figure7b
   
-Figure6 <- ggarrange(Figure6a, Figure6b, ncol = 2, nrow = 1, labels = c("A", "B"), font.label = list(size = 18), common.legend = T, legend = "right")
-Figure6
-ggsave("Figure8.pdf", Figure8, width = 30,
+Figure7 <- ggarrange(Figure7a, Figure7b, ncol = 2, nrow = 1, labels = c("A", "B"), font.label = list(size = 18), common.legend = T, legend = "right")
+Figure7
+ggsave("Figure7.pdf", Figure7, width = 30,
          height = 20,
          units = "cm")
 
@@ -1759,23 +2328,37 @@ metadata_env <- metadata16SFull %>%
   filter(Year == 2022) %>% 
   filter(Treatment == "Nw" | Treatment == "Nc" | Treatment == "River") %>% 
   select(-Primers, -Run, -Type, -TAD, -PO4, -NO3, -NH4, -NO2, -ChlA, -BA, -Time, -Sample, -FlumeID, -Flow, -Year, -Velocity) %>% 
-  distinct()
+  distinct() %>% 
+  mutate(Ammonium = Ammonium/1000,
+         Bromide = Bromide/1000,
+         Calcium = Calcium/1000,
+         Chloride = Chloride/1000,
+         DOC = DOC/1000,
+         Fluoride = Fluoride/1000,
+         Lithium = Lithium/1000,
+         Magnesium = Magnesium/1000,
+         Nitrate = Nitrate/1000,
+         Nitrite = Nitrite/1000, 
+         Potassium = Potassium/1000, 
+         Sodium = Sodium/1000, 
+         Strontium = Strontium/1000,
+         Sulfate = Sulfate/1000)
 
 parameters <- c("pH", "C25", "O2", "Turbidity", "Fluoride", "Chloride", "Nitrite", 
                 "Bromide", "Nitrate", "Sulfate", "Lithium", "Sodium", "Ammonium", "Magnesium", 
                 "Potassium", "Calcium", "Strontium", "DOC")
 
 metadata_env_long <- metadata_env %>%
-  pivot_longer(cols = all_of(parameters), names_to = "Parameter", values_to = "Value")
+  pivot_longer(cols = all_of(parameters), names_to = "Parameter", values_to = "Value") 
 
-labels_param <- c("Ammonium (ppb)", "Bromide (ppb)", "Conductivity (µS/cm)", "Calcium (ppb)", "Chloride (ppb)", 
-                  "DOC (ppb)", "Fluoride (ppb)", "Lithium (ppb)", "Magnesium (ppb)", "Nitrate (ppb)", "Nitrite (ppb)", 
-                  "O2 (mg/L)", "pH", "Potassium (ppb)", "Sodium (ppb)", "Strontium (ppb)", "Sulfate (ppb)", "Turbidity (NTU)")
+labels_param <- c("Ammonium (ppm)", "Bromide (ppm)", "Conductivity (µS/cm)", "Calcium (ppm)", "Chloride (ppm)", 
+                  "DOC (ppm)", "Fluoride (ppm)", "Lithium (ppm)", "Magnesium (ppm)", "Nitrate (ppm)", "Nitrite (ppm)", 
+                  "O2 (mg/L)", "pH", "Potassium (ppm)", "Sodium (ppm)", "Strontium (ppm)", "Sulphate (ppm)", "Turbidity (NTU)")
 names(labels_param) <- c("Ammonium", "Bromide", "C25", "Calcium", "Chloride", 
                          "DOC", "Fluoride", "Lithium", "Magnesium", "Nitrate", "Nitrite", 
                          "O2", "pH", "Potassium", "Sodium", "Strontium", "Sulfate", "Turbidity")
 
-FigureS1 <- ggplot(metadata_env_long, aes(x = Succession, y = Value, color = Treatment)) +
+FigureS2 <- ggplot(metadata_env_long, aes(x = Succession, y = Value, color = Treatment)) +
   geom_point() + 
   geom_line() +
   labs(x = "Succession (days)",
@@ -1791,8 +2374,9 @@ FigureS1 <- ggplot(metadata_env_long, aes(x = Succession, y = Value, color = Tre
         legend.position = "bottom") +
   scale_color_manual(values = c("royalblue", "firebrick", "darkblue" ), labels = c("Control temp. header tank", "Warm temp. header tank", "Streamwater")) +
   facet_wrap(~ Parameter, labeller = as_labeller(labels_param), scales = "free_y", ncol = 3)
+FigureS2 
 
-ggsave("FigureS1.pdf", FigureS1, width = 25,
+ggsave("FigureS2.pdf", FigureS2, width = 25,
        height = 25,
        units = "cm")
 
