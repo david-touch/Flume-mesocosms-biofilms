@@ -1,6 +1,6 @@
 # Flume mesocosms biofilms
 
-This work was published in 2024. You can find the publication here: https://doi.org/10.1093/femsec/fiae163
+This work was published in 2025. You can find the publication here: https://doi.org/10.1093/femsec/fiae163
 
 ## Files description
 
