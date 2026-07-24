@@ -1,6 +1,6 @@
 # Flume mesocosms biofilms
 
-This work was published in 2025. You can find the publication here: https://doi.org/10.1093/femsec/fiae163
+This work was published in 2025 in FEMS Microbiology Ecology. You can find the publication here: https://doi.org/10.1093/femsec/fiae163
 
 ## Files description
 
